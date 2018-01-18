@@ -1,16 +1,15 @@
 from sklearn.naive_bayes import MultinomialNB
-from src.featurize import featurize
-from sklearn.naive_bayes import MultinomialNB
 
-from src.featurize import featurize
+from src.featurizers.vectorizing_featurize import featurize
+from src.loaders.file_loader import create_file_loader
 
-path_to_data = "/Users/simonolofsson/programmering/c++/bayes"
+ALLOWED_EXTENSIONS = [".cpp", ".h"]
+
+path_to_data = "/home/simon/programmering/c++"
 path_to_corpus = '../output/corpus.mm'
 
-features = featurize(path_to_data, path_to_corpus)
+features = featurize(create_file_loader(path_to_data, ALLOWED_EXTENSIONS), path_to_corpus)
 
-# clf = svm.SVC(gamma=0.001, C=100., probability=True)
-# clf.fit(features['data'][:-1], features['target'][:-1])
 clf = MultinomialNB()
 clf.fit(features['data'][:-1], features['target'][:-1])
 
