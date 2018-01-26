@@ -3,7 +3,7 @@ from gensim import matutils
 from gensim import corpora
 
 
-def clean(data):
+def tokenize(data):
     return [dataPoint.split() for dataPoint in data]
 
 
@@ -15,7 +15,7 @@ def vectorize(data, dictionary):
     return [dictionary.doc2bow(dataPoint) for dataPoint in data]
 
 
-def create_corpus(path, vectors):
+def to_mm_corpus(path, vectors):
     corpora.MmCorpus.serialize(path, vectors)
     return corpora.MmCorpus(path)
 
@@ -25,20 +25,26 @@ def to_numpy_mat(corpus):
     return np.rot90(matrix)
 
 
-# Vectorizes the documents retrieved by the function provided and outputs the
-# created vector space to the path passed. Returns the read data as a numpy
-# matrix along with the annotation of each data point.
 def featurize(load_data, path_to_corpus):
 
+    """
+    Vectorizes the documents retrieved by the function provided as a bag of words
+    and outputs the created vector space to the path passed. Returns the read data
+    as a numpy matrix along with the annotation of each data point.
+
+    :param load_data:
+    :param path_to_corpus:
+    :return:
+    """
     documents, targets = load_data()
-    documents = clean(documents)
+    documents = tokenize(documents)
 
     dictionary = create_dictionary(documents)
 
     vecs = vectorize(documents, dictionary)
-    corpus = create_corpus(path_to_corpus, vecs)
-    print(corpus)
+    mm_corpus = to_mm_corpus(path_to_corpus, vecs)
+    print(mm_corpus)
 
-    return {'data': to_numpy_mat(corpus),
+    return {'data': to_numpy_mat(mm_corpus),
             'target': np.fromiter(targets, np.float)}
 
