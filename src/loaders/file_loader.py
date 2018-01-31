@@ -1,33 +1,5 @@
 import os
-from random import randrange
-
-
-def read_project(root_path, documents_dir, allowed_extensions, target_dir):
-
-    """
-    Reads all files with an extension in the allowed_extensions list recursively
-    from the path provided and joins the files' contents with newline characters.
-    Also annotates the path.
-
-    :param root_path:
-    :param documents_dir:
-    :param allowed_extensions:
-    :param target_dir:
-    :return:
-    """
-    documents = []
-
-    for root, directories, files in os.walk(os.path.join(root_path, documents_dir)):
-        for file in files:
-            with open(os.path.join(root, file), "r") as f:
-                filename, file_extension = os.path.splitext(file)
-                if file_extension in allowed_extensions:
-                    documents.append(f.read())
-
-    with open(os.path.join(root_path, target_dir), "r") as f:
-        target = f.read()
-
-    return '\n'.join(documents), target
+from src.loaders.read_project import read_project
 
 
 def create_file_loader(path, allowed_extensions):
@@ -56,10 +28,11 @@ def create_file_loader(path, allowed_extensions):
             for directory in directories:
 
                 if not directory.startswith('.'):
-                    document, target = read_project(os.path.join(root, directory),
-                                                    "documents",
+
+                    project_path = os.path.join(root, directory)
+                    document, target = read_project(project_path + "documents",
                                                     allowed_extensions,
-                                                    "grade/grade.txt")
+                                                    project_path + "grade/grade.txt")
 
                     documents.append(document)
                     targets.append(target)
