@@ -1,11 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.model_selection import cross_validate
-from sklearn.model_selection import KFold
 from sklearn.model_selection import RepeatedKFold
-from sklearn.metrics import roc_curve
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve, roc_auc_score
 from src.featurizers.phd.posnett_hindle_devanbu_featurizer import featurize
 from src.loaders.phd.buse_weimer_loader import create_file_loader
 
@@ -26,7 +24,7 @@ def run():
 
     model = LogisticRegression()
 
-    scoring = ["f1", "accuracy"]
+    scoring = ["f1", "accuracy", "roc_auc"]
     scores = cross_validate(model, features, votes, scoring=scoring, cv=RepeatedKFold(n_splits=10, n_repeats=10))
 
     fpr, tpr, thresholds = roc_curve(votes, scores["test_f1"])
@@ -37,9 +35,13 @@ def run():
     plt.boxplot(scores["test_accuracy"])
     plt.show()
 
-    y_scores = roc_auc_score(votes, scores["test_f1"])
+    plt.boxplot(scores["test_roc_auc"])
+    plt.show()
 
-    print("Area under ROC curve: ", y_scores)
+    # y_scores = roc_auc_score(votes, scores["test_f1"])
+
+    # print("Area under ROC curve: ", y_scores)
+    print("Area under ROC curve: ", scores["test_roc_auc"].mean())
     print("Percent correct: ", scores["test_accuracy"].mean())
 
 

@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import csv
+import operator
 from src.featurizers.nlp_utils import create_dictionary, vectorize
 from src.featurizers.phd.entropy import H
 from src.loaders.phd.buse_weimer_loader import remove_nan
@@ -30,11 +31,13 @@ def get_single_column_csv_reader(column):
 
 
 def read_halstead():
-    return np.rot90(np.matrix(read_csv(data_root + "/Halstead/halstead.csv", get_single_column_csv_reader("Volume")), dtype=np.float64))
+    return np.rot90(np.matrix(read_csv(data_root + "/Halstead/halstead.csv", get_single_column_csv_reader("Volume")),
+                              dtype=np.float64))  # Not explicitly converting to float64 will cause problems during model training.
 
 
 def read_lines():
-    return np.rot90(np.matrix(read_csv(data_root + "/LOC/loc.csv", get_single_column_csv_reader("code")), dtype=np.float64))
+    return np.rot90(np.matrix(read_csv(data_root + "/LOC/loc.csv", get_single_column_csv_reader("code")),
+                              dtype=np.float64))
 
 
 def featurize(documents):
