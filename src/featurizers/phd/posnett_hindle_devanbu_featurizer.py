@@ -11,7 +11,7 @@ def tokenize(documents):
     return [re.findall('..', hex_representation) for hex_representation in hex_documents]
 
 
-def featurize(documents):
+def featurize(documents, halstead_measures, loc_measures):
 
     documents = tokenize(documents)
     dictionary = create_dictionary(documents)
