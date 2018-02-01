@@ -16,7 +16,7 @@ out_dir="reports/LOC"
 mkdir -p "${out_dir}"
 
 current_date=$(date +"%Y-%m-%d_%H:%M:%S")
-out_file="${out_dir}/cloc_${current_date}.csv"
+out_file="${out_dir}/loc.csv"
 
 cloc --csv --report-file=${out_file} --by-file java/
 
