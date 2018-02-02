@@ -1,4 +1,5 @@
 import os
+from natsort import natsorted
 
 
 def read_annotations(annotations_dir):
@@ -12,6 +13,7 @@ def read_documents(documents_dir, allowed_extensions, read_mode="r"):
     documents = []
 
     for root, directories, files in os.walk(documents_dir):
+        files = natsorted(files)
         for file in files:
             with open(os.path.join(root, file), read_mode) as f:
                 filename, file_extension = os.path.splitext(file)
