@@ -192,35 +192,68 @@ def several_different(X, y):
     test_size = 0.20
     seed = 7
 
-    models = [('LR', Pipeline(steps=[('scale', StandardScaler()), ('m', LogisticRegression())])),
-              ('LDA', Pipeline(steps=[('scale', StandardScaler()), ('m', LinearDiscriminantAnalysis())])),
-              ('KNN', Pipeline(steps=[('scale', StandardScaler()), ('m', KNeighborsClassifier())])),
-              ('CART', Pipeline(steps=[('scale', StandardScaler()), ('m', DecisionTreeClassifier())])),
-              ('NB', Pipeline(steps=[('scale', StandardScaler()), ('m', GaussianNB())])),
-              ('SVM', Pipeline(steps=[('scale', StandardScaler()), ('m', SVC())])),
-              ('MLPC', Pipeline(steps=[('scale', StandardScaler()), ('m', MLPClassifier())])),
-              ('RFC', Pipeline(steps=[('scale', StandardScaler()), ('m', RandomForestClassifier())]))]
+    models = [{'name': 'LR',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', LogisticRegression())]),
+               'grid': [{'m__C': [1, 10, 100, 1000]}]
+               },
+              {'name': 'LDA',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', LinearDiscriminantAnalysis())]),
+               'grid': [{'m__solver': ['svd', 'lsqr', 'eigen']}]
+               },
+              {'name': 'KNN',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', KNeighborsClassifier())]),
+               # 'grid': [{'m__weights': ['uniform', 'distance'], 'm__algorithm': ['ball_tree', 'kd_tree', 'brute', 'auto']}]},
+               'grid': []
+               },
+              {'name': 'CART',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', DecisionTreeClassifier())]),
+               'grid': []
+               },
+              {'name': 'NB',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', GaussianNB())]),
+               'grid': []
+               },
+              {'name': 'SVM',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', SVC())]),
+               'grid': []
+               },
+              {'name': 'MLPC',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', MLPClassifier())]),
+               'grid': []
+               },
+              {'name': 'RFC',
+               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', RandomForestClassifier())]),
+               'grid': []
+               }
+              ]
 
     results = []
     names = []
     num_runs = 10
 
-    for name, model in models:
+    for config in models:
 
         model_results = np.array([])
 
         for i in range(0, num_runs):
 
             kfold = KFold(n_splits=10, random_state=i)
-            cv_results = cross_val_score(model, X, y, cv=kfold)
+            estimator = GridSearchCV(estimator=config['model'],
+                                     cv=kfold,
+                                     scoring='accuracy',
+                                     param_grid=config['grid'])
+
+            # cv_results = cross_val_score(estimator, X, y, cv=kfold2)
+            estimator.fit(X, y)
+            cv_results = estimator.best_score_
 
             model_results = np.append(model_results, cv_results)
 
         mean = model_results.mean()
         results.append(mean)
-        names.append(name)
+        names.append(config['name'])
 
-        msg = "%s: %f (%f)" % (name, mean, model_results.std())
+        msg = "%s: %f (%f)" % (config['name'], mean, model_results.std())
         print(msg)
 
 
