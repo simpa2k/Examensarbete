@@ -3,8 +3,8 @@ import re
 import numpy as np
 import scipy as sp
 import csv
-from entropy import shannon_entropy
 from natsort import natsorted
+from sklearn.feature_extraction.text import CountVectorizer
 from src.featurizers.nlp_utils import create_dictionary, vectorize
 from src.featurizers.phd.entropy import H
 from src.loaders.phd.buse_weimer_loader import remove_nan
@@ -72,8 +72,7 @@ def featurize(documents):
     # entropy = np.array([[H(x)] for x in vectors])
     # H = np.array([[shannon_entropy(document)] for document in documents])
     H = np.array([[entropy(document)] for document in documents])
-    halstead = read_halstead()
+    halstead = np.around(read_halstead())
     lines = read_lines()
 
     return np.array(np.concatenate((halstead, lines, H), axis=1))
-
