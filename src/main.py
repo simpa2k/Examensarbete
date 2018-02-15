@@ -59,8 +59,13 @@ def setup_parser():
 
 
 def save_scores_as_plots(results, output_path):
-    mpl.plot(results)
+    mpl.plot(results, label='k_folds')
+    mpl.plot(np.full((len(results),), results.mean()), label='mean')
+    mpl.legend()
     mpl.savefig(output_path + '/curve.png')
+
+    mpl.clf()
+
     mpl.boxplot(results)
     mpl.savefig(output_path + '/boxplot.png')
 
@@ -102,6 +107,9 @@ def main():
     X, y = dataset(args.data_root, args.document_directory, args.annotation_directory)
 
     results = perform_experiment(X, y, estimator)
+
+    print('Mean score was:', results.mean())
+
     save_results(results, args.output_directory, k_fold_label)
 
 
