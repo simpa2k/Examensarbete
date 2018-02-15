@@ -17,6 +17,8 @@ current_date=$(date +"%Y-%m-%d_%H:%M:%S")
 out_dir="reports/Halstead"
 out_file="${out_dir}/halstead.csv"
 
-java -cp ../../tools/:../../tools/HalsteadMetricsCMD.jar:../../tools/halsteadmetrics-1.0-SNAPSHOT-jar-with-dependencies.jar com.simonolofsson.writer.CSVWriter java ${out_file}
+# java -cp ../../tools/:../../tools/HalsteadMetricsCMD.jar:../../tools/halsteadmetrics-1.0-SNAPSHOT-jar-with-dependencies.jar com.simonolofsson.writer.CSVWriter java ${out_file}
+pwd
+java -jar ../../tools/HalsteadMetricsCMD.jar java/ ${out_file} html
 
-rm -r java
+#rm -r java

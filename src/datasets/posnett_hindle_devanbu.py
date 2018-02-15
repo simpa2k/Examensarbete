@@ -5,14 +5,14 @@ from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import GaussianNB, MultinomialNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
-from sklearn import svm
+from sklearn.feature_selection import RFE, SelectFromModel
 from sklearn import datasets
 from sklearn.model_selection import cross_validate, cross_val_predict, cross_val_score, KFold, StratifiedKFold, RepeatedKFold, train_test_split, RepeatedStratifiedKFold
 from sklearn.metrics import roc_curve, auc, accuracy_score, f1_score, roc_auc_score, make_scorer
@@ -193,8 +193,10 @@ def several_different(X, y):
     seed = 7
 
     models = [{'name': 'LR',
-               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', LogisticRegression())]),
-               'grid': [{'m__C': [1, 10, 100, 1000]}]
+               'model': Pipeline(steps=[('scale', StandardScaler()),
+                                        ('feature_selection', SelectFromModel(LinearSVC(penalty='l1', dual=False))),
+                                        ('m', LogisticRegression())]),
+               'grid': [{'m__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}]
                },
               {'name': 'LDA',
                'model': Pipeline(steps=[('scale', StandardScaler()), ('m', LinearDiscriminantAnalysis())]),
@@ -202,28 +204,27 @@ def several_different(X, y):
                },
               {'name': 'KNN',
                'model': Pipeline(steps=[('scale', StandardScaler()), ('m', KNeighborsClassifier())]),
-               # 'grid': [{'m__weights': ['uniform', 'distance'], 'm__algorithm': ['ball_tree', 'kd_tree', 'brute', 'auto']}]},
-               'grid': []
+               'grid': [{'m__weights': ['uniform', 'distance'], 'm__algorithm': ['ball_tree', 'kd_tree', 'brute', 'auto']}],
                },
               {'name': 'CART',
                'model': Pipeline(steps=[('scale', StandardScaler()), ('m', DecisionTreeClassifier())]),
-               'grid': []
+               'grid': [{'m__criterion': ['gini', 'entropy'], 'm__splitter': ['best', 'random']}]
                },
-              {'name': 'NB',
-               'model': Pipeline(steps=[('scale', StandardScaler()), ('m', GaussianNB())]),
-               'grid': []
-               },
+              # {'name': 'NB',
+              # 'model': Pipeline(steps=[('scale', StandardScaler()), ('m', MultinomialNB())]),
+              # 'grid': [{'m__alpha': [0.0, 0.25, 0.5, 0.75, 1.0], 'm__fit_prior': [True, False]}]
+              # },
               {'name': 'SVM',
                'model': Pipeline(steps=[('scale', StandardScaler()), ('m', SVC())]),
-               'grid': []
+               'grid': [{'m__C': [1, 10, 100, 1000]}]
                },
               {'name': 'MLPC',
                'model': Pipeline(steps=[('scale', StandardScaler()), ('m', MLPClassifier())]),
-               'grid': []
+               'grid': [{'m__activation': ['identity', 'logistic', 'tanh', 'relu'], 'm__max_iter': [1000]}]
                },
               {'name': 'RFC',
                'model': Pipeline(steps=[('scale', StandardScaler()), ('m', RandomForestClassifier())]),
-               'grid': []
+               'grid': [{'m__n_estimators': [1, 5, 10, 20]}]
                }
               ]
 
@@ -241,7 +242,8 @@ def several_different(X, y):
             estimator = GridSearchCV(estimator=config['model'],
                                      cv=kfold,
                                      scoring='accuracy',
-                                     param_grid=config['grid'])
+                                     param_grid=config['grid'],
+                                     return_train_score=False)
 
             # cv_results = cross_val_score(estimator, X, y, cv=kfold2)
             estimator.fit(X, y)
@@ -257,20 +259,25 @@ def several_different(X, y):
         print(msg)
 
 
-def run():
+def random_forest(X, y):
+
+    clf = RandomForestClassifier(n_estimators=100)
+    kfold = KFold(n_splits=10, random_state=3)
+
+    results = cross_val_score(clf, X, y, cv=kfold)
+    print(results.mean())
+
+
+def get(data_root, documents_directory, annotation_directory):
     np.set_printoptions(suppress=True)
 
-    data_root = "../../data/bw"
+    # data_root = "../../data/bw"
 
-    load_data = create_file_loader(data_root + "/snippets", data_root + "/votes.csv")
+    # load_data = create_file_loader(data_root + "/snippets", data_root + "/votes.csv")
+    load_data = create_file_loader(data_root + documents_directory, data_root + annotation_directory)
     documents, votes = load_data()
 
-    features = featurize(documents)
+    features = featurize(documents, data_root + "/reports")
     votes = prepare_target_data(votes)
 
-    # from_teh_internetz(features, votes)
-    several_different(features, votes)
-
-
-if __name__ == "__main__":
-    run()
+    return features, votes

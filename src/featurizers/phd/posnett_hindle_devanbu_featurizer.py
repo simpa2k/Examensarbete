@@ -10,7 +10,7 @@ from src.featurizers.phd.entropy import H
 from src.loaders.phd.buse_weimer_loader import remove_nan
 
 
-data_root = "../../data/bw/reports"
+# data_root = "../../data/bw/reports"
 
 
 def read_csv(path, read_function):
@@ -40,13 +40,13 @@ def get_sorted_csv_reader(column_to_sort_by, *columns_to_read):
     return read_sorted_csv_columns
 
 
-def read_halstead():
+def read_halstead(data_root):
     return np.matrix(read_csv(data_root + "/Halstead/halstead.csv",
                               get_sorted_csv_reader("File name", "Volume")),
                      dtype=np.float64)  # Not explicitly converting to float64 will cause problems during model training.
 
 
-def read_lines():
+def read_lines(data_root):
     comments_and_code = np.matrix(read_csv(data_root + "/LOC/loc.csv",
                                            get_sorted_csv_reader("filename", "comment", "code")),
                                   dtype=np.float64)
@@ -61,7 +61,7 @@ def entropy(labels):
     return - probs.dot(np.log2(probs))
 
 
-def featurize(documents):
+def featurize(documents, data_root):
 
     # documents = tokenize(documents)
     # dictionary = create_dictionary(documents)
@@ -72,7 +72,7 @@ def featurize(documents):
     # entropy = np.array([[H(x)] for x in vectors])
     # H = np.array([[shannon_entropy(document)] for document in documents])
     H = np.array([[entropy(document)] for document in documents])
-    halstead = np.around(read_halstead())
-    lines = read_lines()
+    halstead = np.around(read_halstead(data_root), decimals=2)
+    lines = read_lines(data_root)
 
     return np.array(np.concatenate((halstead, lines, H), axis=1))
