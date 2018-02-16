@@ -8,5 +8,5 @@
     -runFaultHunter=false \
     -runRTEHunter=false \
     -runDCF=false \
-    -resultsDir=../data/bw/reports/sourceMeter \
-    -projectBaseDir=../data/bw/java
+    -resultsDir=$2 \
+    -projectBaseDir=$1

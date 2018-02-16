@@ -14,6 +14,7 @@ from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 
 from src.datasets import posnett_hindle_devanbu
+from src.datasets.LundDighemOlofssonDataset import LundDighemOlofssonDataset
 
 
 def default_pipeline_of(estimator):
@@ -28,8 +29,8 @@ estimators = [
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
 
-dataset_labels = ['phd']
-datasets = [posnett_hindle_devanbu.get]
+dataset_labels = ['phd', 'ldo']
+datasets = [posnett_hindle_devanbu.get, LundDighemOlofssonDataset()]
 datasets_by_label = dict(zip(dataset_labels, datasets))
 
 
@@ -42,12 +43,15 @@ def setup_parser():
                         help='Path to the directory containing the documents to be processed, '
                              'relative to the data-root.',
                         default='/snippets')
-    parser.add_argument('--annotation-directory',
+    parser.add_argument('--annotation-path',
                         help='Path to the correct labels of the documents to be processed, relative to the data-root.',
                         default='/votes.csv')
     parser.add_argument('--output-directory',
-                        help='Output directory for scoring data.',
-                        default='../output/scoring')
+                        help='Output directory for data.',
+                        default='../output/')
+    parser.add_argument('--scoring-directory',
+                        help='Output directory for scoring data, relative to the output-directory.',
+                        default='/scoring')
     parser.add_argument('--k-fold-label', help='A label to put before each k fold iteration in the outputted csv.',
                         default='')
     parser.add_argument('--estimator', help='The machine learning algorithm to be used.',
@@ -104,13 +108,18 @@ def main():
 
     estimator = estimators_by_label[args.estimator]
     dataset = datasets_by_label[args.dataset]
-    X, y = dataset(args.data_root, args.document_directory, args.annotation_directory)
+    # X, y = dataset(args.data_root, args.document_directory, args.annotation_directory)
+    dataset.load(args.data_root, args.annotation_path)
+    # dataset.describe(args.output_directory)
+
+    X = dataset.features
+    y = dataset.annotations
 
     results = perform_experiment(X, y, estimator)
 
     print('Mean score was:', results.mean())
 
-    save_results(results, args.output_directory, k_fold_label)
+    save_results(results, os.path.join(args.output_directory, args.scoring_directory), k_fold_label)
 
 
 if __name__ == '__main__':
