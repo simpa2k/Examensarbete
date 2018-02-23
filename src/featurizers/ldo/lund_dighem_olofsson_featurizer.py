@@ -4,7 +4,7 @@ from natsort import natsorted
 
 import numpy as np
 
-from src.utils.csv import read_csv, read_csv_from_string, get_csv_reader, save_as_csv
+from src.utils.csv_utils import read_csv, read_csv_from_string, get_csv_reader, save_as_csv
 from src.utils.entropy import entropy
 from src.utils.remove_nan import remove_nan_from_array
 from src.loaders.read_project import read_documents

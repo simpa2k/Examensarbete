@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from src.featurizers.nlp_utils import create_dictionary, vectorize
 from src.featurizers.phd.entropy import H
 from src.loaders.phd.buse_weimer_loader import remove_nan_from_matrix
-from src.utils.csv import read_csv, get_sorted_csv_reader
+from src.utils.csv_utils import read_csv, get_sorted_csv_reader
 
 
 # data_root = "../../data/bw/reports"
