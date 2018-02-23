@@ -1,5 +1,6 @@
 import csv
 import io
+import numpy as np
 from natsort import natsorted
 
 
@@ -25,3 +26,11 @@ def get_sorted_csv_reader(column_to_sort_by, *columns_to_read):
         return get_csv_reader(columns_to_read)(sorted_dict_reader)
 
     return read_sorted_csv_columns
+
+
+def save_as_csv(output_file, data, header):
+    np.savetxt(output_file,
+               data,
+               header=header,
+               comments='',
+               delimiter=',')

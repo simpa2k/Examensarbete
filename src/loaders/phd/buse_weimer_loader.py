@@ -1,20 +1,6 @@
 import numpy as np
-import math
 from src.loaders.read_project import read_documents
-
-
-def remove_nan(matrix):
-    """
-    Removes all NaN values from a numpy matrix.
-    From https://stackoverflow.com/questions/25026486/removing-nan-elements-from-matrix
-
-    :param matrix: The numpy matrix to remove all NaN values from
-    :return: A numpy matrix with all NaN values removed
-    """
-    matrix = matrix[:, ~np.isnan(matrix).all(0)]
-    matrix = matrix[~np.isnan(matrix).all(1)]
-
-    return matrix
+from src.utils.remove_nan import remove_nan_from_matrix
 
 
 def create_file_loader(path_to_snippets, path_to_votes):
@@ -22,7 +8,7 @@ def create_file_loader(path_to_snippets, path_to_votes):
     def load_data():
         snippets = read_documents(path_to_snippets, [".jsnp"], "rb")  # Read as bytes
         votes = np.genfromtxt(path_to_votes, delimiter=",")
-        votes = remove_nan(votes)
+        votes = remove_nan_from_matrix(votes)
 
         return snippets, votes
 

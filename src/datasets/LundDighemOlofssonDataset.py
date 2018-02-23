@@ -42,3 +42,4 @@ class LundDighemOlofssonDataset():
     def output_annotation_plots(self, output_path):
         plt.hist(self.annotations, bins=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
         plt.savefig(os.path.join(output_path, 'annotations_histogram.png'))
+        plt.clf()

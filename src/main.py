@@ -51,7 +51,7 @@ def setup_parser():
                         default='../output/')
     parser.add_argument('--scoring-directory',
                         help='Output directory for scoring data, relative to the output-directory.',
-                        default='/scoring')
+                        default='scoring')
     parser.add_argument('--k-fold-label', help='A label to put before each k fold iteration in the outputted csv.',
                         default='')
     parser.add_argument('--estimator', help='The machine learning algorithm to be used.',
@@ -72,6 +72,7 @@ def save_scores_as_plots(results, output_path):
 
     mpl.boxplot(results)
     mpl.savefig(output_path + '/boxplot.png')
+    mpl.clf()
 
 
 def save_scores_as_csv(results, output_path, k_fold_label):
@@ -110,7 +111,7 @@ def main():
     dataset = datasets_by_label[args.dataset]
     # X, y = dataset(args.data_root, args.document_directory, args.annotation_directory)
     dataset.load(args.data_root, args.annotation_path)
-    # dataset.describe(args.output_directory)
+    dataset.describe(args.output_directory)
 
     X = dataset.features
     y = dataset.annotations

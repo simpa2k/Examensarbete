@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 ~/program/SourceMeter/Java/SourceMeterJava \
-    -projectName=snippets \
+    -currentDate=$4 \
+    -projectName=$3 \
     -runAndroidHunter=false \
     -runMetricHunter=false \
     -runVulnerabilityHunter=false \

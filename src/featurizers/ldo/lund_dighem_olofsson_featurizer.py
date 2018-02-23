@@ -4,8 +4,9 @@ from natsort import natsorted
 
 import numpy as np
 
-from src.utils.csv import read_csv, read_csv_from_string, get_csv_reader
+from src.utils.csv import read_csv, read_csv_from_string, get_csv_reader, save_as_csv
 from src.utils.entropy import entropy
+from src.utils.remove_nan import remove_nan_from_array
 from src.loaders.read_project import read_documents
 
 
@@ -18,22 +19,34 @@ def count_lines_of_code(path_to_project):
     return np.sum(matrix)
 
 
+def generate_source_meter_data_if_not_exists(path_to_project,
+                                             project_name,
+                                             name_of_output_directory,
+                                             destination_directory):
+
+    if not os.path.exists(os.path.join(destination_directory, name_of_output_directory)):
+        subprocess.call(['/home/simon/program/SourceMeter/Java/SourceMeterJava',
+                         '-currentDate={}'.format(name_of_output_directory),
+                         '-projectName={}'.format(project_name),
+                         '-runAndroidHunter=false',
+                         '-runMetricHunter=false',
+                         '-runVulnerabilityHunter=false',
+                         '-runFaultHunter=false',
+                         '-runRTEHunter=false',
+                         '-runDCF=false',
+                         '-resultsDir={}'.format(destination_directory),
+                         '-projectBaseDir={}'.format(path_to_project)])
+
+
 def calculate_halsteads_v(path_to_project):
-    project_name = 'temp'
-    name_of_output_directory = 'temp'
+    project_name = os.path.basename(path_to_project)
+    name_of_output_directory = project_name
     destination_directory = '/home/simon/programmering/python/Examensarbete/data/ldo/reports/sourceMeter'
 
-    subprocess.call(['/home/simon/program/SourceMeter/Java/SourceMeterJava',
-                      '-currentDate={}'.format(name_of_output_directory),
-                      '-projectName={}'.format(project_name),
-                      '-runAndroidHunter=false',
-                      '-runMetricHunter=false',
-                      '-runVulnerabilityHunter=false',
-                      '-runFaultHunter=false',
-                      '-runRTEHunter=false',
-                      '-runDCF=false',
-                      '-resultsDir={}'.format(destination_directory),
-                      '-projectBaseDir={}'.format(path_to_project)])
+    generate_source_meter_data_if_not_exists(path_to_project,
+                                             project_name,
+                                             name_of_output_directory,
+                                             destination_directory)
 
     method_metrics = np.matrix(read_csv(os.path.join(destination_directory,
                                                      name_of_output_directory,
@@ -43,7 +56,7 @@ def calculate_halsteads_v(path_to_project):
                                         get_csv_reader(['HVOL'])),
                                dtype=np.float64)
 
-    return np.mean(method_metrics)
+    return np.mean(remove_nan_from_array(method_metrics))
 
 
 def calculate_entropy(path_to_project):
@@ -56,15 +69,28 @@ def featurize_project(path_to_project):
     average_method_V = calculate_halsteads_v(path_to_project)
     H = calculate_entropy(path_to_project)
 
+    print('Featurized project: {}\n\tLOC: {}\n\tV: {}\n\tH: {}'.format(os.path.basename(path_to_project),
+                                                                       loc,
+                                                                       average_method_V,
+                                                                       H))
+
     return [loc, average_method_V, H]
 
 
 def featurize(path_to_projects):
     features = []
+    features_path = '../data/ldo/reports/features.csv'
 
-    for root, directories, files in os.walk(path_to_projects):
-        for directory in natsorted(directories):
-            if not directory.startswith('.'):
-                features.append(featurize_project(os.path.join(root, directory)))
+    if not os.path.exists(features_path):
+        for root, directories, files in os.walk(path_to_projects):
+            for directory in natsorted(directories):
+                if not directory.startswith('.'):
+                    features.append(featurize_project(os.path.join(root, directory)))
+
+            break
+
+        save_as_csv(features_path, features, '')
+    else:
+        features = np.genfromtxt(features_path, delimiter=',')
 
     return features
