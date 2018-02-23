@@ -22,7 +22,7 @@ class LundDighemOlofssonDataset():
         return featurize(path_to_projects)
 
     def load_annotations(self, path_to_annotations):
-        return np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1]
+        return np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4].mean(axis=1)
 
     def describe(self, output_path):
         self.describe_annotations(os.path.join(output_path, 'annotations'))
@@ -31,6 +31,7 @@ class LundDighemOlofssonDataset():
 
     def describe_annotations(self, output_path):
         self.output_annotation_csv(output_path)
+        self.output_normal_test(output_path);
         self.output_annotation_plots(output_path)
 
     def output_annotation_csv(self, output_path):
@@ -38,6 +39,15 @@ class LundDighemOlofssonDataset():
         np.savetxt(os.path.join(output_path, 'annotations_description.csv'),
                    np.array([nobs, minmax[0], minmax[1], mean, variance, skewness, kurtosis])[np.newaxis],
                    header='Number of observations,Min,Max,Mean,Variance,Skewness,Kurtosis',
+                   comments='',
+                   delimiter=',',
+                   fmt='%5.2f')
+
+    def output_normal_test(self, output_path):
+        k2, p = stats.normaltest(self.annotations)
+        np.savetxt(os.path.join(output_path, 'annotations_normal_test.csv'),
+                   np.array([k2, p])[np.newaxis],
+                   header='k2,p',
                    comments='',
                    delimiter=',',
                    fmt='%5.2f')
