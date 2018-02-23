@@ -89,7 +89,7 @@ def featurize(path_to_projects):
 
             break
 
-        save_as_csv(features_path, features, '')
+        save_as_csv(features_path, features, '', '%5.10f')
     else:
         features = np.genfromtxt(features_path, delimiter=',')
 

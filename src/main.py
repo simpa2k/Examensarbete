@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as mpl
 import numpy as np
 
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 
@@ -21,11 +21,12 @@ def default_pipeline_of(estimator):
     return Pipeline(steps=[('scale', StandardScaler()), ('estimator', estimator)])
 
 
-estimator_labels = ['mlpc', 'lr', 'nb']
+estimator_labels = ['mlpc', 'lr', 'nb', 'gnb']
 estimators = [
     default_pipeline_of(MLPClassifier()),
     default_pipeline_of(LogisticRegression()),
-    MultinomialNB()
+    MultinomialNB(),
+    GaussianNB()
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
 
@@ -96,7 +97,7 @@ def save_results(results, output_path, k_fold_label):
 
 def perform_experiment(X, y, estimator):
     seed = 0
-    k_fold = StratifiedKFold(n_splits=10, random_state=seed)
+    k_fold = StratifiedKFold(n_splits=3, random_state=seed)
 
     return cross_val_score(estimator, X, y, cv=k_fold, scoring='accuracy')
 

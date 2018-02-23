@@ -28,9 +28,18 @@ def get_sorted_csv_reader(column_to_sort_by, *columns_to_read):
     return read_sorted_csv_columns
 
 
-def save_as_csv(output_file, data, header):
+def save_as_csv(output_file, data, header, fmt):
     np.savetxt(output_file,
                data,
                header=header,
                comments='',
-               delimiter=',')
+               delimiter=',',
+               fmt=fmt)
+
+
+def join_csv_files(output_file, destination_file, destination_file_colums, input_files, columns_to_join_on):
+    read_data = read_csv(destination_file, get_csv_reader(destination_file_colums))
+    for input_file in input_files:
+        read_data = np.concatenate((read_data, read_csv(input_file, get_csv_reader(columns_to_join_on))), axis=1)
+
+    return read_data
