@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 from src.featurizers.ldo.lund_dighem_olofsson_featurizer import featurize
+from src.datasets.ldo.inter_annotator_agreement import calculate_inter_annotator_agreement
 
 
 class LundDighemOlofssonDataset():
@@ -13,16 +14,19 @@ class LundDighemOlofssonDataset():
     def __init__(self):
         self.features = None
         self.annotations = None
+        self.unprocessed_annotations = None
 
     def load(self, path_to_projects, path_to_annotations):
         self.features = self.load_features(path_to_projects)
-        self.annotations = self.load_annotations(path_to_annotations)
+        self.annotations, self.unprocessed_annotations = self.load_annotations(path_to_annotations)
 
     def load_features(self, path_to_projects):
         return featurize(path_to_projects)
 
     def load_annotations(self, path_to_annotations):
-        return np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4].mean(axis=1)
+        unprocessed_annotations = np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4]
+        return unprocessed_annotations.mean(axis=1), unprocessed_annotations
+        # return np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4].mean(axis=1)
 
     def describe(self, output_path):
         self.describe_annotations(os.path.join(output_path, 'annotations'))
@@ -31,7 +35,8 @@ class LundDighemOlofssonDataset():
 
     def describe_annotations(self, output_path):
         self.output_annotation_csv(output_path)
-        self.output_normal_test(output_path);
+        self.output_normal_test(output_path)
+        calculate_inter_annotator_agreement(self.unprocessed_annotations)
         self.output_annotation_plots(output_path)
 
     def output_annotation_csv(self, output_path):

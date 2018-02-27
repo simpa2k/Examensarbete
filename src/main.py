@@ -8,13 +8,12 @@ from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 
-from sklearn.metrics import make_scorer, roc_auc_score
-from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
-from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
 from src.datasets import posnett_hindle_devanbu
-from src.datasets.LundDighemOlofssonDataset import LundDighemOlofssonDataset
+from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
 
 
 def default_pipeline_of(estimator):
@@ -117,12 +116,13 @@ def main():
     X = dataset.features
     y = dataset.annotations
 
+    """
     results = perform_experiment(X, y, estimator)
 
     print('Mean score was:', results.mean())
 
     save_results(results, os.path.join(args.output_directory, args.scoring_directory), k_fold_label)
-
+    """
 
 if __name__ == '__main__':
     main()
