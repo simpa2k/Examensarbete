@@ -96,7 +96,7 @@ def save_results(results, output_path, k_fold_label):
 
 def perform_experiment(X, y, estimator):
     seed = 0
-    k_fold = StratifiedKFold(n_splits=3, random_state=seed)
+    k_fold = StratifiedKFold(n_splits=10, random_state=seed)
 
     return cross_val_score(estimator, X, y, cv=k_fold, scoring='accuracy')
 
@@ -114,13 +114,14 @@ def main():
     dataset.describe(args.output_directory)
 
     X = dataset.features
-    y = np.where(dataset.annotations > 3, 1, 0)
+    y = np.where(dataset.annotations > 3.14, 1, 0)
 
     results = perform_experiment(X, y, estimator)
 
     print('Mean score was:', results.mean())
 
     save_results(results, os.path.join(args.output_directory, args.scoring_directory), k_fold_label)
+
 
 if __name__ == '__main__':
     main()

@@ -50,6 +50,14 @@ def calculate_agreement_scores(annotator_one_annotations, annotator_two_annotati
                                spearmans_rho_label: spearmans_rho}}
 
 
+def indexed_mean(list_of_tuples, index):
+    return np.array([tuple[index] for tuple in list_of_tuples]).mean()
+
+
+def tuple_mean(list_of_tuples):
+    return indexed_mean(list_of_tuples, 0), indexed_mean(list_of_tuples, 1)
+
+
 def calculate_inter_annotator_agreement(annotations):
     cohens_kappa_scores = []
     weighted_cohens_kappa_scores = []
@@ -66,4 +74,10 @@ def calculate_inter_annotator_agreement(annotations):
         pearson_correlations.append(agreement_scores[pearsons_r_label])
         spearman_correlations.append(agreement_scores[spearmans_rho_label])
 
-    print(cohens_kappa_scores, kendalls_tau_scores, pearson_correlations, spearman_correlations)
+    cohens_kappa_mean = np.array(cohens_kappa_scores).mean()
+    weighted_cohens_kappa_mean = np.array(weighted_cohens_kappa_scores).mean()
+    kendalls_tau_mean = tuple_mean(kendalls_tau_scores)
+    pearson_correlation_mean = tuple_mean(pearson_correlations)
+    spearman_correlations_mean = tuple_mean(spearman_correlations)
+
+    return [(cohens_kappa_mean, 1), (weighted_cohens_kappa_mean, 1), kendalls_tau_mean, pearson_correlation_mean, spearman_correlations_mean]

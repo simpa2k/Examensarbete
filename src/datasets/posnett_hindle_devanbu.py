@@ -287,4 +287,9 @@ def get(data_root, documents_directory, annotation_directory):
 
 if __name__ == '__main__':
     features, votes = get('data/bw', '/snippets', '/votes.csv')
-    probability_density_function_from_samples(votes, 1.5, 5, .12, 'output/pdf.png')
+    probability_density_function_from_samples(votes,
+                                              1.5, 5,
+                                              .12,
+                                              'output/buse_weimer_pdf.png',
+                                              x_axis_label='Genomsnittligt läsbarhetsbetyg',
+                                              y_axis_label='Kodavsnittets täthetsvärde')

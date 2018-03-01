@@ -36,7 +36,7 @@ class LundDighemOlofssonDataset():
     def describe_annotations(self, output_path):
         self.output_annotation_csv(output_path)
         self.output_normal_test(output_path)
-        calculate_inter_annotator_agreement(self.unprocessed_annotations)
+        self.output_inter_annotator_agreement(output_path)
         self.output_annotation_plots(output_path)
 
     def output_annotation_csv(self, output_path):
@@ -57,6 +57,20 @@ class LundDighemOlofssonDataset():
                    delimiter=',',
                    fmt='%5.2f')
 
+    def output_inter_annotator_agreement(self, output_path):
+        correlations = calculate_inter_annotator_agreement(self.unprocessed_annotations)
+        flat = list(sum(correlations, ()))
+        np.savetxt(os.path.join(output_path, 'inter_annotator_agreement.csv'),
+                   np.array(flat)[np.newaxis],
+                   header='cohens_kappa,cohens_kappa_p,'
+                          'weighted_cohens_kappa,weighted_cohens_kappa_p,'
+                          'kendalls_tau,kendalls_tau_p,'
+                          'spearmans_r,spearmans_r_p,'
+                          'pearsons_rho,pearsons_rho_p',
+                   comments='',
+                   delimiter=',',
+                   fmt='%5.2f')
+
     def output_annotation_plots(self, output_path):
         plt.hist(self.annotations, bins=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
         plt.savefig(os.path.join(output_path, 'annotations_histogram.png'))
@@ -65,7 +79,9 @@ class LundDighemOlofssonDataset():
         probability_density_function_from_samples(self.annotations,
                                                   1.5, 5,
                                                   .22,
-                                                  os.path.join(output_path, 'annotations_pdf.png'))
+                                                  os.path.join(output_path, 'annotations_pdf.png'),
+                                                  x_axis_label='Genomsnittligt läsbarhetsbetyg',
+                                                  y_axis_label='Kodavsnittets täthetsvärde')
 
     def describe_features(self, output_path):
         self.output_feature_csv(output_path)
@@ -97,4 +113,3 @@ class LundDighemOlofssonDataset():
 
     def correlate(self, output_path):
         pass
-
