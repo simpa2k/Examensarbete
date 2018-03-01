@@ -7,6 +7,7 @@ from scipy import stats
 
 from src.featurizers.ldo.lund_dighem_olofsson_featurizer import featurize
 from src.datasets.ldo.inter_annotator_agreement import calculate_inter_annotator_agreement
+from src.utils.probability_density_function import probability_density_function_from_samples
 
 
 class LundDighemOlofssonDataset():
@@ -26,7 +27,6 @@ class LundDighemOlofssonDataset():
     def load_annotations(self, path_to_annotations):
         unprocessed_annotations = np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4]
         return unprocessed_annotations.mean(axis=1), unprocessed_annotations
-        # return np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4].mean(axis=1)
 
     def describe(self, output_path):
         self.describe_annotations(os.path.join(output_path, 'annotations'))
@@ -61,6 +61,11 @@ class LundDighemOlofssonDataset():
         plt.hist(self.annotations, bins=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
         plt.savefig(os.path.join(output_path, 'annotations_histogram.png'))
         plt.clf()
+
+        probability_density_function_from_samples(self.annotations,
+                                                  1.5, 5,
+                                                  .22,
+                                                  os.path.join(output_path, 'annotations_pdf.png'))
 
     def describe_features(self, output_path):
         self.output_feature_csv(output_path)

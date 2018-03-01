@@ -114,15 +114,13 @@ def main():
     dataset.describe(args.output_directory)
 
     X = dataset.features
-    y = dataset.annotations
+    y = np.where(dataset.annotations > 3, 1, 0)
 
-    """
     results = perform_experiment(X, y, estimator)
 
     print('Mean score was:', results.mean())
 
     save_results(results, os.path.join(args.output_directory, args.scoring_directory), k_fold_label)
-    """
 
 if __name__ == '__main__':
     main()
