@@ -90,7 +90,7 @@ class LundDighemOlofssonDataset():
     def output_feature_csv(self, output_path):
         nobs, minmax, mean, variance, skewness, kurtosis = stats.describe(self.features)
         np.savetxt(os.path.join(output_path, 'features_description.csv'),
-                   np.array([minmax[0], minmax[1], mean, variance, skewness, kurtosis]),
+                   np.rot90(np.array([minmax[0], minmax[1], mean, variance, skewness, kurtosis])),
                    header='Min,Max,Mean,Variance,Skewness,Kurtosis',
                    comments='',
                    delimiter=',',
