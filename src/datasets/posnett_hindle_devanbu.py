@@ -18,6 +18,8 @@ from sklearn.model_selection import cross_validate, cross_val_predict, cross_val
 from sklearn.metrics import roc_curve, auc, accuracy_score, f1_score, roc_auc_score, make_scorer
 from src.featurizers.phd.posnett_hindle_devanbu_featurizer import featurize
 from src.loaders.phd.buse_weimer_loader import create_file_loader
+from src.utils.probability_density_function import probability_density_function_from_samples
+from scipy.stats import gaussian_kde
 
 
 roc_auc = "roc_auc_weighted"
@@ -28,7 +30,7 @@ f1 = "f1_weighted"
 def prepare_target_data(target_data):
 
     target_data = np.mean(target_data, axis=0)
-    target_data = np.where(target_data < 3.14, 0, 1)
+    # target_data = np.where(target_data < 3.14, 0, 1)
     target_data = np.reshape(target_data, (100,))
 
     return target_data
@@ -281,3 +283,13 @@ def get(data_root, documents_directory, annotation_directory):
     votes = prepare_target_data(votes)
 
     return features, votes
+
+
+if __name__ == '__main__':
+    features, votes = get('data/bw', '/snippets', '/votes.csv')
+    probability_density_function_from_samples(votes,
+                                              1.5, 5,
+                                              .12,
+                                              'output/buse_weimer_pdf.png',
+                                              x_axis_label='Genomsnittligt läsbarhetsbetyg',
+                                              y_axis_label='Kodavsnittets täthetsvärde')
