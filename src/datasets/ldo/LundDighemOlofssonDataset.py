@@ -8,6 +8,7 @@ from scipy import stats
 from src.featurizers.ldo.lund_dighem_olofsson_featurizer import featurize
 from src.datasets.ldo.inter_annotator_agreement import calculate_inter_annotator_agreement
 from src.utils.probability_density_function import probability_density_function_from_samples
+from src.utils.save_data import save_as_csv, save_fig
 
 
 class LundDighemOlofssonDataset():
@@ -41,39 +42,39 @@ class LundDighemOlofssonDataset():
 
     def output_annotation_csv(self, output_path):
         nobs, minmax, mean, variance, skewness, kurtosis = stats.describe(self.annotations)
-        np.savetxt(os.path.join(output_path, 'annotations_description.csv'),
-                   np.array([nobs, minmax[0], minmax[1], mean, variance, skewness, kurtosis])[np.newaxis],
-                   header='Number of observations,Min,Max,Mean,Variance,Skewness,Kurtosis',
-                   comments='',
-                   delimiter=',',
-                   fmt='%5.2f')
+        save_as_csv(
+            output_path,
+            'annotations_description.csv',
+            np.array([nobs, minmax[0], minmax[1], mean, variance, skewness, kurtosis])[np.newaxis],
+            'Number of observations,Min,Max,Mean,Variance,Skewness,Kurtosis'
+        )
 
     def output_normal_test(self, output_path):
         k2, p = stats.normaltest(self.annotations)
-        np.savetxt(os.path.join(output_path, 'annotations_normal_test.csv'),
-                   np.array([k2, p])[np.newaxis],
-                   header='k2,p',
-                   comments='',
-                   delimiter=',',
-                   fmt='%5.2f')
+        save_as_csv(
+            output_path,
+            'annotations_normal_test.csv',
+            np.array([k2, p])[np.newaxis],
+            'k2,p'
+        )
 
     def output_inter_annotator_agreement(self, output_path):
         correlations = calculate_inter_annotator_agreement(self.unprocessed_annotations)
         flat = list(sum(correlations, ()))
-        np.savetxt(os.path.join(output_path, 'inter_annotator_agreement.csv'),
-                   np.array(flat)[np.newaxis],
-                   header='cohens_kappa,cohens_kappa_p,'
-                          'weighted_cohens_kappa,weighted_cohens_kappa_p,'
-                          'kendalls_tau,kendalls_tau_p,'
-                          'spearmans_r,spearmans_r_p,'
-                          'pearsons_rho,pearsons_rho_p',
-                   comments='',
-                   delimiter=',',
-                   fmt='%5.2f')
+        save_as_csv(
+            output_path,
+            'inter_annotator_agreement.csv',
+            np.array(flat)[np.newaxis],
+            'cohens_kappa,cohens_kappa_p,'
+            'weighted_cohens_kappa,weighted_cohens_kappa_p,'
+            'kendalls_tau,kendalls_tau_p,'
+            'spearmans_r,spearmans_r_p,'
+            'pearsons_rho,pearsons_rho_p'
+        )
 
     def output_annotation_plots(self, output_path):
         plt.hist(self.annotations, bins=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
-        plt.savefig(os.path.join(output_path, 'annotations_histogram.png'))
+        save_fig(output_path, 'annotations_histogram.png', plt)
         plt.clf()
 
         probability_density_function_from_samples(self.annotations,
@@ -89,12 +90,12 @@ class LundDighemOlofssonDataset():
 
     def output_feature_csv(self, output_path):
         nobs, minmax, mean, variance, skewness, kurtosis = stats.describe(self.features)
-        np.savetxt(os.path.join(output_path, 'features_description.csv'),
-                   np.rot90(np.array([minmax[0], minmax[1], mean, variance, skewness, kurtosis])),
-                   header='Min,Max,Mean,Variance,Skewness,Kurtosis',
-                   comments='',
-                   delimiter=',',
-                   fmt='%5.2f')
+        save_as_csv(
+            output_path,
+            'features_description.csv',
+            np.rot90(np.array([minmax[0], minmax[1], mean, variance, skewness, kurtosis])),
+            'Min,Max,Mean,Variance,Skewness,Kurtosis'
+        )
 
     def output_feature_plots(self, output_path):
         self.output_feature_scatter_plots(output_path)
@@ -108,7 +109,7 @@ class LundDighemOlofssonDataset():
             plt.scatter(self.features[0:, x], self.features[0:, y])
             i += 1
 
-        plt.savefig(os.path.join(output_path, 'feature_scatter_plots.png'))
+        save_fig(output_path, 'feature_scatter_plots.png', plt)
         plt.clf()
 
     def correlate(self, output_path):

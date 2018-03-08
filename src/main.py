@@ -14,6 +14,7 @@ from sklearn.pipeline import Pipeline
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
+from src.utils.save_data import save_fig, save_as_csv
 
 
 def default_pipeline_of(estimator):
@@ -66,12 +67,12 @@ def save_scores_as_plots(results, output_path):
     mpl.plot(results, label='k_folds')
     mpl.plot(np.full((len(results),), results.mean()), label='mean')
     mpl.legend()
-    mpl.savefig(output_path + '/curve.png')
+    save_fig(output_path, 'curve.png', mpl)
 
     mpl.clf()
 
     mpl.boxplot(results)
-    mpl.savefig(output_path + '/boxplot.png')
+    save_fig(output_path, 'boxplot.png', mpl)
     mpl.clf()
 
 
@@ -81,12 +82,12 @@ def save_scores_as_csv(results, output_path, k_fold_label):
 
     results = np.append(results, results.mean())
 
-    np.savetxt(os.path.join(output_path, 'results.csv'),
-               np.array(results)[np.newaxis],
-               header=header,
-               comments='',
-               delimiter=',',
-               fmt='%5.2f')
+    save_as_csv(
+        output_path,
+        'results.csv',
+        np.array(results)[np.newaxis],
+        header
+    )
 
 
 def save_results(results, output_path, k_fold_label):
