@@ -114,8 +114,8 @@ def main():
     dataset.load(args.data_root, args.annotation_path)
     dataset.describe(args.output_directory)
 
-    X = dataset.features
-    y = np.where(dataset.annotations > 3.14, 1, 0)
+    X = dataset.get_features()
+    y = np.where(dataset.get_annotations() > 3.14, 1, 0)
 
     results = perform_experiment(X, y, estimator)
 

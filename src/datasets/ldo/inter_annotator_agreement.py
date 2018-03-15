@@ -1,5 +1,6 @@
 from itertools import combinations
 import numpy as np
+import pandas as pd
 from sklearn.metrics import cohen_kappa_score
 from scipy.stats import kendalltau, pearsonr, spearmanr
 from nltk.metrics import agreement
@@ -80,4 +81,7 @@ def calculate_inter_annotator_agreement(annotations):
     pearson_correlation_mean = tuple_mean(pearson_correlations)
     spearman_correlations_mean = tuple_mean(spearman_correlations)
 
-    return [(cohens_kappa_mean, 1), (weighted_cohens_kappa_mean, 1), kendalls_tau_mean, pearson_correlation_mean, spearman_correlations_mean]
+    data = [(cohens_kappa_mean, 1), (weighted_cohens_kappa_mean, 1), kendalls_tau_mean, pearson_correlation_mean, spearman_correlations_mean]
+    return pd.DataFrame(data,
+                        index=["cohen's kappa", "weighted cohen's kappa", "kendall's tau", "pearson's r", "spearman's rho"],
+                        columns=["correlation", "p"])
