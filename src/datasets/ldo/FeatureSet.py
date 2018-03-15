@@ -14,6 +14,7 @@ from src.utils.save_data import save_as_csv, save_fig
 class FeatureSet:
     def __init__(self):
         self.features = None
+        self.feature_labels = ['H', 'V', 'E']
 
     def load(self, path_to_projects):
         self.features = featurize(path_to_projects)
@@ -36,11 +37,10 @@ class FeatureSet:
         )
 
     def output_feature_correlations(self, output_path):
-        labels = ['H', 'V', 'E']
-        df = pd.DataFrame(index=labels, columns=labels)
+        df = pd.DataFrame(index=self.feature_labels, columns=self.feature_labels)
         for x, y in itertools.product([0, 1, 2], repeat=2):
             r = spearmanr(self.features[0:, x], self.features[0:, y])
-            df[labels[y]][labels[x]] = r[0]
+            df[self.feature_labels[y]][self.feature_labels[x]] = r[0]
 
         df.to_csv(os.path.join(output_path, 'feature_correlations.csv'))
 
@@ -48,12 +48,16 @@ class FeatureSet:
         self.output_feature_scatter_plots(output_path)
 
     def output_feature_scatter_plots(self, output_path):
-        plt.subplots_adjust(hspace=0.4, wspace=0.4)
+        plt.subplots_adjust(hspace=0.4, wspace=0.6)
 
         i = 1
         for x, y in itertools.permutations([0, 1, 2], 2):
             plt.subplot(2, 3, i)
             plt.scatter(self.features[0:, x], self.features[0:, y])
+
+            plt.xlabel(self.feature_labels[x])
+            plt.ylabel(self.feature_labels[y])
+
             i += 1
 
         save_fig(output_path, 'feature_scatter_plots.png', plt)
