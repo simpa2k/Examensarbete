@@ -36,8 +36,6 @@ def read_lines(data_root):
     return np.sum(comments_and_code, axis=1)
 
 
-
-
 def featurize(documents, data_root):
 
     # documents = tokenize(documents)

@@ -9,7 +9,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 
 from sklearn.model_selection import cross_val_score, StratifiedKFold
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
 
 from src.datasets import posnett_hindle_devanbu
@@ -26,7 +26,7 @@ estimators = [
     default_pipeline_of(MLPClassifier()),
     default_pipeline_of(LogisticRegression()),
     MultinomialNB(),
-    GaussianNB()
+    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', GaussianNB())])
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
 

@@ -20,7 +20,7 @@ from src.featurizers.phd.posnett_hindle_devanbu_featurizer import featurize
 from src.loaders.phd.buse_weimer_loader import create_file_loader
 from src.utils.probability_density_function import probability_density_function_from_samples
 from scipy.stats import gaussian_kde
-
+from src.utils.save_data import save_as_csv
 
 roc_auc = "roc_auc_weighted"
 accuracy = "accuracy"
@@ -287,6 +287,7 @@ def get(data_root, documents_directory, annotation_directory):
 
 if __name__ == '__main__':
     features, votes = get('data/bw', '/snippets', '/votes.csv')
+    save_as_csv('data/bw/reports/', 'features.csv', features, 'H,V,E')
     probability_density_function_from_samples(votes,
                                               1.5, 5,
                                               .12,
