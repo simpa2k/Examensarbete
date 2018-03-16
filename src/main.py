@@ -7,10 +7,12 @@ import numpy as np
 from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble.forest import RandomForestClassifier
 
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import make_scorer, roc_auc_score, accuracy_score
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -21,12 +23,13 @@ def default_pipeline_of(estimator):
     return Pipeline(steps=[('scale', StandardScaler()), ('estimator', estimator)])
 
 
-estimator_labels = ['mlpc', 'lr', 'nb', 'gnb']
+estimator_labels = ['mlpc', 'lr', 'nb', 'gnb', 'rfc']
 estimators = [
-    default_pipeline_of(MLPClassifier()),
+    default_pipeline_of(MLPClassifier(random_state=0)),
     default_pipeline_of(LogisticRegression()),
-    MultinomialNB(),
-    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', GaussianNB())])
+    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', MultinomialNB())]),
+    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', GaussianNB())]),
+    RandomForestClassifier(n_estimators=100, random_state=0)
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
 
@@ -96,10 +99,25 @@ def save_results(results, output_path, k_fold_label):
 
 
 def perform_experiment(X, y, estimator):
-    seed = 0
-    k_fold = StratifiedKFold(n_splits=10, random_state=seed)
+    results = []
 
-    return cross_val_score(estimator, X, y, cv=k_fold, scoring='accuracy')
+    for i in range(0, 9):
+        k_fold = StratifiedKFold(n_splits=10, random_state=i)
+
+        """
+        Macro-averaged recall is the same as balanced accuracy, see:
+
+        http://scikit-learn.org/dev/modules/model_evaluation.html#balanced-accuracy-score 
+
+        And:
+
+        https://github.com/scikit-learn/scikit-learn/issues/6747
+        """
+        results.append(
+            cross_val_score(estimator, X, y, cv=k_fold, scoring='recall_macro').mean()
+        )
+
+    return np.array(results)
 
 
 def main():
@@ -110,7 +128,7 @@ def main():
 
     estimator = estimators_by_label[args.estimator]
     dataset = datasets_by_label[args.dataset]
-    # X, y = dataset(args.data_root, args.document_directory, args.annotation_directory)
+
     dataset.load(args.data_root, args.annotation_path)
     dataset.describe(args.output_directory)
 
