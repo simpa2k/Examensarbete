@@ -115,7 +115,7 @@ def main():
     dataset.describe(args.output_directory)
 
     X = dataset.get_features()
-    y = np.where(dataset.get_annotations() > 3.14, 1, 0)
+    y = dataset.get_annotations()
 
     results = perform_experiment(X, y, estimator)
 

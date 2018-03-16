@@ -83,5 +83,9 @@ def calculate_inter_annotator_agreement(annotations):
 
     data = [(cohens_kappa_mean, 1), (weighted_cohens_kappa_mean, 1), kendalls_tau_mean, pearson_correlation_mean, spearman_correlations_mean]
     return pd.DataFrame(data,
-                        index=["cohen's kappa", "weighted cohen's kappa", "kendall's tau", "pearson's r", "spearman's rho"],
-                        columns=["correlation", "p"])
+                        index=['Cohens \(\kappa\)', 'Linjärt viktad Cohens \(\kappa\)',
+                               'Kendalls \(\\tau\)',
+                               'Pearsons \(r\)',
+                               'Spearmans \(\\rho\)'],
+                        columns=['Korrelation', 'p'],
+                        dtype=float).round({'Korrelation': 2, 'p': 4})

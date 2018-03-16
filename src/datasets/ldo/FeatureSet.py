@@ -2,19 +2,16 @@ import os
 import itertools
 
 import numpy as np
-import pandas as pd
 from scipy import stats
-from scipy.stats import spearmanr
 import matplotlib.pyplot as plt
 
-from src.featurizers.ldo.lund_dighem_olofsson_featurizer import featurize
+from src.featurizers.ldo.lund_dighem_olofsson_featurizer import featurize, feature_labels
 from src.utils.save_data import save_as_csv, save_fig
 
 
 class FeatureSet:
     def __init__(self):
         self.features = None
-        self.feature_labels = ['H', 'V', 'E']
 
     def load(self, path_to_projects):
         self.features = featurize(path_to_projects)
@@ -25,24 +22,15 @@ class FeatureSet:
 
     def output_feature_csv(self, output_path):
         self.output_feature_descriptive_statistics(output_path)
-        self.output_feature_correlations(output_path)
 
     def output_feature_descriptive_statistics(self, output_path):
-        nobs, minmax, mean, variance, skewness, kurtosis = stats.describe(self.features)
+        nobs, minmax, mean, variance, skewness, kurtosis = stats.describe(self.features.as_matrix())
         save_as_csv(
             output_path,
             'features_description.csv',
             np.rot90(np.array([minmax[0], minmax[1], mean, variance, skewness, kurtosis])),
-            'Min,Max,Mean,Variance,Skewness,Kurtosis'
+            'Minimum,Maximum,Medelvärde,Varians,Skevhet,Kurtosis'
         )
-
-    def output_feature_correlations(self, output_path):
-        df = pd.DataFrame(index=self.feature_labels, columns=self.feature_labels)
-        for x, y in itertools.product([0, 1, 2], repeat=2):
-            r = spearmanr(self.features[0:, x], self.features[0:, y])
-            df[self.feature_labels[y]][self.feature_labels[x]] = r[0]
-
-        df.to_csv(os.path.join(output_path, 'feature_correlations.csv'))
 
     def output_feature_plots(self, output_path):
         self.output_feature_scatter_plots(output_path)
@@ -51,12 +39,12 @@ class FeatureSet:
         plt.subplots_adjust(hspace=0.4, wspace=0.6)
 
         i = 1
-        for x, y in itertools.permutations([0, 1, 2], 2):
+        for x, y in itertools.permutations(feature_labels, 2):
             plt.subplot(2, 3, i)
-            plt.scatter(self.features[0:, x], self.features[0:, y])
+            plt.scatter(self.features[x], self.features[y])
 
-            plt.xlabel(self.feature_labels[x])
-            plt.ylabel(self.feature_labels[y])
+            plt.xlabel(x)
+            plt.ylabel(y)
 
             i += 1
 

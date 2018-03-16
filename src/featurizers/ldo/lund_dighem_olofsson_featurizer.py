@@ -3,11 +3,15 @@ import subprocess
 from natsort import natsorted
 
 import numpy as np
+import pandas as pd
 
 from src.utils.csv_utils import read_csv, read_csv_from_string, get_csv_reader, save_as_csv
 from src.utils.entropy import entropy
 from src.utils.remove_nan import remove_nan_from_array
 from src.loaders.read_project import read_documents
+
+
+feature_labels = ['LOC', 'V', 'E']
 
 
 def count_lines_of_code(path_to_project):
@@ -93,4 +97,4 @@ def featurize(path_to_projects):
     else:
         features = np.genfromtxt(features_path, delimiter=',')
 
-    return features
+    return pd.DataFrame(features, index=np.arange(0, 100), columns=feature_labels)
