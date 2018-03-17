@@ -22,3 +22,5 @@ def probability_density_function_from_samples(samples,
     plt.ylabel(y_axis_label)
 
     plt.savefig(output_path)
+
+    plt.clf()

@@ -12,7 +12,6 @@ from sklearn.ensemble.forest import RandomForestClassifier
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import make_scorer, roc_auc_score, accuracy_score
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -29,7 +28,7 @@ estimators = [
     default_pipeline_of(LogisticRegression()),
     Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', MultinomialNB())]),
     Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', GaussianNB())]),
-    RandomForestClassifier(n_estimators=100, random_state=0)
+    RandomForestClassifier(n_estimators=10, random_state=0)
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
 
@@ -99,13 +98,19 @@ def save_results(results, output_path, k_fold_label):
 
 
 def perform_experiment(X, y, estimator):
+    """
+    Runs a 10-fold cross validation, ten times, with a different random seed
+    each time, as per (Posnett, Hindle & Devanbu 2011).
+
+    :return The macro-averaged recall of each cross validation fold.
+    """
     results = []
 
     for i in range(0, 9):
         k_fold = StratifiedKFold(n_splits=10, random_state=i)
 
         """
-        Macro-averaged recall is the same as balanced accuracy, see:
+        Macro-averaged recall is equivalent to balanced accuracy, see:
 
         http://scikit-learn.org/dev/modules/model_evaluation.html#balanced-accuracy-score 
 
@@ -114,10 +119,10 @@ def perform_experiment(X, y, estimator):
         https://github.com/scikit-learn/scikit-learn/issues/6747
         """
         results.append(
-            cross_val_score(estimator, X, y, cv=k_fold, scoring='recall_macro').mean()
+            cross_val_score(estimator, X, y, cv=k_fold, scoring='recall_macro')
         )
 
-    return np.array(results)
+    return np.array(results).mean(axis=0)
 
 
 def main():
