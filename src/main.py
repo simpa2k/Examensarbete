@@ -3,6 +3,7 @@ import os
 
 import matplotlib.pyplot as mpl
 import numpy as np
+import pandas as pd
 
 from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.neural_network import MLPClassifier
@@ -12,6 +13,7 @@ from sklearn.ensemble.forest import RandomForestClassifier
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import make_scorer, accuracy_score
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -28,7 +30,7 @@ estimators = [
     default_pipeline_of(LogisticRegression()),
     Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', MultinomialNB())]),
     Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', GaussianNB())]),
-    RandomForestClassifier(n_estimators=10, random_state=0)
+    RandomForestClassifier(n_estimators=100, random_state=0)
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
 
@@ -97,32 +99,67 @@ def save_results(results, output_path, k_fold_label):
     save_scores_as_csv(results, output_path, k_fold_label)
 
 
+def weighted_accuracy(y_true, y_pred, prediction_gatherer=None):
+    if prediction_gatherer is not None:
+        prediction_gatherer.append(y_pred)
+
+    """
+    From: https://www.quora.com/How-do-you-measure-the-accuracy-score-for-each-class-when-testing-classifier-in-sklearn
+    """
+    w = np.ones(y_true.shape[0])
+    for idx, i in enumerate(np.bincount(y_true)):
+        w[y_true == idx] *= (i/float(y_true.shape[0]))
+
+    return accuracy_score(y_true, y_pred, sample_weight=w)
+
+
+def create_prediction_dataframe():
+    cross_validations = ['cv' + str(i) for i in range(0, 10)]
+    folds = ['fold' + str(i) for i in range(0, 10)]
+    pred = ['pred' + str(i) for i in range(0, 8)]
+
+    index = pd.MultiIndex.from_product([cross_validations, folds, pred], names=['cv', 'fold', 'p'])
+
+    return pd.DataFrame(index=['pred_class', 'doc'], columns=index)
+
+
 def perform_experiment(X, y, estimator):
     """
     Runs a 10-fold cross validation, ten times, with a different random seed
     each time, as per (Posnett, Hindle & Devanbu 2011).
 
-    :return The macro-averaged recall of each cross validation fold.
+    :returns The weighted accuracy of each cross validation fold and the raw predictions mapped
+    to the document the prediction was made on.
     """
     results = []
+    predictions = create_prediction_dataframe()
 
     for i in range(0, 9):
         k_fold = StratifiedKFold(n_splits=10, random_state=i)
 
-        """
-        Macro-averaged recall is equivalent to balanced accuracy, see:
+        predictions_for_this_run = []
 
-        http://scikit-learn.org/dev/modules/model_evaluation.html#balanced-accuracy-score 
-
-        And:
-
-        https://github.com/scikit-learn/scikit-learn/issues/6747
-        """
+        scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
         results.append(
-            cross_val_score(estimator, X, y, cv=k_fold, scoring='recall_macro')
+            cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
         )
 
-    return np.array(results).mean(axis=0)
+        record_predictions_for_documents(i, list(k_fold.split(X, y)), predictions, predictions_for_this_run)
+
+    return np.array(results).mean(axis=0), predictions
+
+
+def record_predictions_for_documents(cross_validation_run, splits, data_frame, predictions_for_this_run):
+    i = 0
+    for fold_predictions in predictions_for_this_run:
+        j = 0
+        for prediction in fold_predictions:
+            column = ('cv' + str(cross_validation_run), 'fold' + str(i), 'pred' + str(j))
+            data_frame.loc['pred_class', column] = prediction
+            data_frame.loc['doc', column] = splits[i][1][j]
+            j = j + 1
+
+        i = i + 1
 
 
 def main():
@@ -140,11 +177,12 @@ def main():
     X = dataset.get_features()
     y = dataset.get_annotations()
 
-    results = perform_experiment(X, y, estimator)
+    results, predictions = perform_experiment(X, y, estimator)
 
     print('Mean score was:', results.mean())
 
     save_results(results, os.path.join(args.output_directory, args.scoring_directory), k_fold_label)
+    predictions.to_csv(os.path.join(args.output_directory, args.scoring_directory, 'predictions.csv'), index_label=False)
 
 
 if __name__ == '__main__':
