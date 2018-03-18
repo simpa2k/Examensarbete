@@ -1,3 +1,6 @@
+# Adapted from an original solution taken from:
+# https://stats.stackexchange.com/questions/57993/how-to-explain-how-i-divided-a-bimodal-distribution-based-on-kernel-density-esti/72005#72005
+
 library(mixtools)
 
 set.seed(2969)
