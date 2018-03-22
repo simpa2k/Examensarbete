@@ -48,7 +48,7 @@ class AnnotationSet:
             output_path,
             'annotations_normal_test.csv',
             np.array([k2, p])[np.newaxis],
-            'k$^2$,p'
+            'k$^2$,p (Tvåsidigt)'
         )
 
     def output_inter_annotator_agreement(self, output_path):

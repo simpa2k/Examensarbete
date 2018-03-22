@@ -2,3 +2,15 @@
 *.mm
 *.index
 data/msr
+.Rproj.user
+.RData
+.Rhistory
+R/.Rproj.user
+R/R.Rproj
+R/.Rproj
+R/.RData
+R/.Rhistory
+R/csv
+R/plots
+output
+data

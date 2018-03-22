@@ -140,6 +140,7 @@ def perform_experiment(X, y, estimator):
         predictions_for_this_run = []
 
         scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
+
         results.append(
             cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
         )
