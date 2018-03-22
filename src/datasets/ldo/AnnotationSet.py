@@ -14,6 +14,7 @@ class AnnotationSet:
     def __init__(self):
         self.unprocessed_annotations = None
         self.averaged_annotations = None
+        self.no_neutral_annotations = None
         self.binarized_annotations = None
 
         self.annotation_column = 'Label'
@@ -22,10 +23,10 @@ class AnnotationSet:
         self.unprocessed_annotations = np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4]
         self.averaged_annotations = self.unprocessed_annotations.mean(axis=1)
 
-        no_neutral = pd.DataFrame(self.averaged_annotations, columns=[self.annotation_column])
-        no_neutral = no_neutral[no_neutral.Label != 3]
+        averaged_as_dataset = pd.DataFrame(self.averaged_annotations, columns=[self.annotation_column])
+        self.no_neutral_annotations = averaged_as_dataset[averaged_as_dataset.Label != 3]
 
-        self.binarized_annotations = pd.DataFrame((no_neutral[self.annotation_column] > 3).astype(int))
+        self.binarized_annotations = pd.DataFrame((self.no_neutral_annotations[self.annotation_column] > 3).astype(int))
 
     def describe_annotations(self, output_path):
         self.output_annotation_csv(output_path)
@@ -34,6 +35,10 @@ class AnnotationSet:
         self.output_annotation_plots(output_path)
 
     def output_annotation_csv(self, output_path):
+        self.describe_averaged_annotations(output_path)
+        self.describe_binarized_annotations(output_path)
+
+    def describe_averaged_annotations(self, output_path):
         nobs, minmax, mean, variance, skewness, kurtosis = stats.describe(self.averaged_annotations)
         save_as_csv(
             output_path,
@@ -41,6 +46,21 @@ class AnnotationSet:
             np.array([nobs, minmax[0], minmax[1], mean, variance, skewness, kurtosis])[np.newaxis],
             'Antal observationer,Minimum,Maximum,Medelvärde,Varians,Skevhet,Kurtosis'
         )
+
+    def describe_binarized_annotations(self, output_path):
+        class_counts, bin_edges = np.histogram(self.no_neutral_annotations, bins=[0, 3, 5])
+        sum_class_counts = np.sum(class_counts)
+
+        neutral_count = self.averaged_annotations.shape[0] - sum_class_counts
+
+        column_labels = ['Mindre läsbara (x < 3)', 'Neutrala (x = 3)', 'Mer läsbara (x > 3)', 'Summa x != 3']
+        df = pd.DataFrame([
+            np.append(
+                np.insert(class_counts, 1, neutral_count),
+                sum_class_counts
+            )], columns=column_labels)
+
+        df.to_csv(os.path.join(output_path, 'binarized_description.csv'))
 
     def output_normal_test(self, output_path):
         k2, p = stats.normaltest(self.averaged_annotations)
