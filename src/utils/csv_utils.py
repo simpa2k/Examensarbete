@@ -1,6 +1,7 @@
 import csv
 import io
 import numpy as np
+import pandas as pd
 from natsort import natsorted
 
 
@@ -37,14 +38,27 @@ def save_as_csv(output_file, data, header, fmt):
                fmt=fmt)
 
 
-def join_csv_files(output_file, target_file, target_file_row_header, input_files, column_to_join_on):
-    read_data = read_csv(target_file, get_csv_reader([target_file_row_header, column_to_join_on]))
-    for input_file in input_files:
-        read_data = np.concatenate((read_data, read_csv(input_file, get_csv_reader([column_to_join_on]))), axis=1)
+def join_csv_files(output_file, input_files, column_to_join_on, column_names):
+    joined = None
 
-    header = ','.join([target_file_row_header, ','.join([column_to_join_on + str(i) for i in range(len(input_files) + 1)])])
-    save_as_csv(output_file, read_data, header, '%s')
+    i = 0
+    for file in input_files:
+        df = pd.read_csv(file)
+        df = df.set_index(column_to_join_on)
+        df.columns = column_names(i)
+
+        if joined is not None:
+            joined = joined.join(df)
+        else:
+            joined = df
+
+        i = i + 1
+
+    joined.to_csv(output_file)
 
 
 if __name__ == '__main__':
-    join_csv_files('data/ldo/joined_annotations.csv', 'data/ldo/annotations.csv', 'Uppgift', ['data/ldo/maja.csv', 'data/ldo/robert.csv'], 'Bedömning')
+    join_csv_files('data/ldo/annotations.csv',
+                   ['data/ldo/simon_changed.csv', 'data/ldo/maja_changed.csv', 'data/ldo/robert.csv'],
+                   'Uppgift',
+                   lambda i: ['Bedömning' + str(i)])
