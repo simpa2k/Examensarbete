@@ -1,15 +1,15 @@
 library(utils)
 library(irr)
 
-data <- annotations[, 2:4]
+#data <- annotations[, 2:4]
+data <- a
 data <- as.data.frame(sapply(data, as.numeric))
 combinations <- (combn(1:ncol(data), 2))
 
-gatherCorrelationDataAsList <- function(kappa, lWeightedKappa, qWeightedKappa, kendall, pearson, spearman) {
+gatherCorrelationDataAsList <- function(kappa, weightedKappa, kendall, pearson, spearman) {
   list(
     c(kappa$value,          kappa$p.value),
-    c(lWeightedKappa$value, lWeightedKappa$p.value),
-    c(qWeightedKappa$value, qWeightedKappa$p.value),
+    c(weightedKappa$value,  weightedKappa$p.value),
     c(kendall$estimate,     kendall$p.value),
     c(pearson$estimate,     pearson$p.value),
     c(spearman$estimate,    spearman$p.value)
@@ -19,8 +19,7 @@ gatherCorrelationDataAsList <- function(kappa, lWeightedKappa, qWeightedKappa, k
 performTests <- function(voter1And2, voter1, voter2) {
   gatherCorrelationDataAsList(
     kappa2  (voter1And2),
-    kappa2  (voter1And2, weight = c(1.0, 0.75, 0.5, 0.25, 0.0)), # Linear weights
-    kappa2  (voter1And2, weight = 'squared'),
+    kappa2  (voter1And2, weight = 'equal'), # Linear weights
     cor.test(voter1, voter2, method = 'kendall'),
     cor.test(voter1, voter2, method = 'pearson'),
     cor.test(voter1, voter2, method = 'spearman')
@@ -55,7 +54,6 @@ df[, 'p'] <- round(df[, 'p'], 4)
 colnames(df) <- c('Korrelation', 'p (Tvåsidigt)')
 rownames(df) <- c('Cohens \\(\\kappa\\)', 
                   'Linjärt viktad Cohens \\(\\kappa\\)', 
-                  'Kvadratiskt viktad Cohens \\(\\kappa\\)', 
                   'Kendalls \\(\\tau\\)', 
                   'Pearsons \\(r\\)', 
                   'Spearmans \\(\\rho\\)')
