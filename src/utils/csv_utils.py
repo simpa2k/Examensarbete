@@ -59,6 +59,6 @@ def join_csv_files(output_file, input_files, column_to_join_on, column_names):
 
 if __name__ == '__main__':
     join_csv_files('data/ldo/annotations.csv',
-                   ['data/ldo/simon_changed.csv', 'data/ldo/maja_changed.csv', 'data/ldo/robert.csv'],
+                   ['data/ldo/simon.csv', 'data/ldo/maja_changed.csv', 'data/ldo/robert.csv'],
                    'Uppgift',
                    lambda i: ['Bedömning' + str(i)])

@@ -36,7 +36,7 @@ class AnnotationSet:
 
     def output_annotation_csv(self, output_path):
         self.describe_averaged_annotations(output_path)
-        self.describe_binarized_annotations(output_path)
+        self.describe_annotation_binarization(output_path)
 
     def describe_averaged_annotations(self, output_path):
         nobs, minmax, mean, variance, skewness, kurtosis = stats.describe(self.averaged_annotations)
@@ -47,7 +47,7 @@ class AnnotationSet:
             'Antal observationer,Minimum,Maximum,Medelvärde,Varians,Skevhet,Kurtosis'
         )
 
-    def describe_binarized_annotations(self, output_path):
+    def describe_annotation_binarization(self, output_path):
         class_counts, bin_edges = np.histogram(self.no_neutral_annotations, bins=[0, 3, 5])
         sum_class_counts = np.sum(class_counts)
 
@@ -60,7 +60,7 @@ class AnnotationSet:
                 sum_class_counts
             )], columns=column_labels)
 
-        df.to_csv(os.path.join(output_path, 'binarized_description.csv'))
+        df.to_csv(os.path.join(output_path, 'binarized_description.csv'), index=False)
 
     def output_normal_test(self, output_path):
         k2, p = stats.normaltest(self.averaged_annotations)
