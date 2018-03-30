@@ -53,14 +53,15 @@ class AnnotationSet:
 
         neutral_count = self.averaged_annotations.shape[0] - sum_class_counts
 
-        column_labels = ['Mindre läsbara (x < 3)', 'Neutrala (x = 3)', 'Mer läsbara (x > 3)', 'Summa x != 3']
+        column_labels = ['Mindre läsbara', 'Neutrala', 'Mer läsbara', 'Summa mindre och mer läsbara', 'Totalt']
         df = pd.DataFrame([
             np.append(
                 np.insert(class_counts, 1, neutral_count),
-                sum_class_counts
+                np.array([sum_class_counts, sum_class_counts + neutral_count])
             )], columns=column_labels)
 
         df.to_csv(os.path.join(output_path, 'binarized_description.csv'), index=False)
+        self.binarized_annotations.to_csv(os.path.join(output_path, 'binarized_human_annotations.csv'))
 
     def output_normal_test(self, output_path):
         k2, p = stats.normaltest(self.averaged_annotations)

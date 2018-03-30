@@ -39,6 +39,12 @@ dataset_labels = ['phd', 'ldo']
 datasets = [posnett_hindle_devanbu.get, LundDighemOlofssonDataset()]
 datasets_by_label = dict(zip(dataset_labels, datasets))
 
+cross_validation_column_label = 'cv'
+cross_validation_fold_column_label = 'fold'
+prediction_column_label = 'pred'
+
+predicted_class_label = 'Class'
+document_label = 'Document'
 
 def setup_parser():
     parser = argparse.ArgumentParser()
@@ -115,13 +121,15 @@ def weighted_accuracy(y_true, y_pred, prediction_gatherer=None):
 
 
 def create_prediction_dataframe():
-    cross_validations = ['cv' + str(i) for i in range(0, 10)]
-    folds = ['fold' + str(i) for i in range(0, 10)]
-    pred = ['pred' + str(i) for i in range(0, 8)]
+    cross_validations = [cross_validation_column_label + str(i) for i in range(0, 10)]
+    folds = [cross_validation_fold_column_label + str(i) for i in range(0, 10)]
+    pred = [prediction_column_label + str(i) for i in range(0, 8)]
 
-    index = pd.MultiIndex.from_product([cross_validations, folds, pred], names=['cv', 'fold', 'p'])
+    index = pd.MultiIndex.from_product([cross_validations, folds, pred], names=['Cross validation run',
+                                                                                'Cross validation fold',
+                                                                                'Prediction'])
 
-    return pd.DataFrame(index=['pred_class', 'doc'], columns=index)
+    return pd.DataFrame(index=[predicted_class_label, document_label], columns=index)
 
 
 def perform_experiment(X, y, estimator):
@@ -135,7 +143,7 @@ def perform_experiment(X, y, estimator):
     results = []
     predictions = create_prediction_dataframe()
 
-    for i in range(0, 9):
+    for i in range(0, 10):
         k_fold = StratifiedKFold(n_splits=10, random_state=i)
 
         predictions_for_this_run = []
@@ -156,9 +164,12 @@ def record_predictions_for_documents(cross_validation_run, splits, data_frame, p
     for fold_predictions in predictions_for_this_run:
         j = 0
         for prediction in fold_predictions:
-            column = ('cv' + str(cross_validation_run), 'fold' + str(i), 'pred' + str(j))
-            data_frame.loc['pred_class', column] = prediction
-            data_frame.loc['doc', column] = splits[i][1][j]
+            column = (cross_validation_column_label + str(cross_validation_run),
+                      cross_validation_fold_column_label + str(i),
+                      prediction_column_label + str(j))
+
+            data_frame.loc[predicted_class_label, column] = prediction
+            data_frame.loc[document_label, column] = splits[i][1][j]
             j = j + 1
 
         i = i + 1

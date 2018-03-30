@@ -42,11 +42,16 @@ class LundDighemOlofssonDataset():
         concatenated = np.concatenate(
             (self.feature_set.features, np.reshape(self.annotation_set.averaged_annotations, newshape=(100, 1))),
             axis=1)
-        df = pd.DataFrame(index=labels, columns=labels, dtype=float)
+
+        correlations = pd.DataFrame(index=labels, columns=labels, dtype=float)
+        p_values = pd.DataFrame(index=labels, columns=labels, dtype=float)
 
         for x, y in itertools.product(range(len(labels)), repeat=2):
             r = spearmanr(concatenated[0:, x], concatenated[0:, y])
-            df[labels[y]][labels[x]] = r[0]
 
-        df.round(2).to_csv(os.path.join(output_path, 'correlations.csv'))
+            correlations[labels[y]][labels[x]] = r[0]
+            p_values[labels[y]][labels[x]] = r[1]
+
+        correlations.round(2).to_csv(os.path.join(output_path, 'correlations.csv'))
+        p_values.round(4).to_csv(os.path.join(output_path, 'correlation_p_values.csv'))
 

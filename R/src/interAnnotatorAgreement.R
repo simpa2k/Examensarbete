@@ -1,7 +1,8 @@
 library(utils)
 library(irr)
 
-data <- annotations[, 2:4]
+#data <- annotations[, 2:4]
+data <- a
 data <- as.data.frame(sapply(data, as.numeric))
 combinations <- (combn(1:ncol(data), 2))
 
@@ -18,7 +19,7 @@ gatherCorrelationDataAsList <- function(kappa, weightedKappa, kendall, pearson, 
 performTests <- function(voter1And2, voter1, voter2) {
   gatherCorrelationDataAsList(
     kappa2  (voter1And2),
-    kappa2  (voter1And2, weight = c(1.0, 0.75, 0.5, 0.25, 0.0)), # Linear weights
+    kappa2  (voter1And2, weight = 'equal'), # Linear weights
     cor.test(voter1, voter2, method = 'kendall'),
     cor.test(voter1, voter2, method = 'pearson'),
     cor.test(voter1, voter2, method = 'spearman')

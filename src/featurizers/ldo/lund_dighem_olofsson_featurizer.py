@@ -11,7 +11,7 @@ from src.utils.remove_nan import remove_nan_from_array
 from src.loaders.read_project import read_documents
 
 
-feature_labels = ['LOC', 'V', 'E']
+feature_labels = ['Rader kod', 'Halsteads V', 'Entropi']
 
 
 def count_lines_of_code(path_to_project):
