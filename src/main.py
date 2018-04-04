@@ -5,7 +5,7 @@ import matplotlib.pyplot as mpl
 import numpy as np
 import pandas as pd
 
-from sklearn.naive_bayes import MultinomialNB, GaussianNB
+from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble.forest import RandomForestClassifier
@@ -24,12 +24,13 @@ def default_pipeline_of(estimator):
     return Pipeline(steps=[('scale', StandardScaler()), ('estimator', estimator)])
 
 
-estimator_labels = ['mlpc', 'lr', 'nb', 'gnb', 'rfc']
+estimator_labels = ['mlpc', 'lr', 'nb', 'gnb', 'bnb', 'rfc']
 estimators = [
     default_pipeline_of(MLPClassifier(random_state=0)),
     default_pipeline_of(LogisticRegression()),
     Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', MultinomialNB())]),
     Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', GaussianNB())]),
+    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', BernoulliNB())]),
     RandomForestClassifier(n_estimators=100, random_state=0)
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
@@ -136,7 +137,7 @@ def perform_experiment(X, y, estimator):
     Runs a 10-fold cross validation, ten times, with a different random seed
     each time, as per (Posnett, Hindle & Devanbu 2011).
 
-    :returns The weighted accuracy of each cross validation fold and the raw predictions mapped
+    :returns The mean weighted accuracy of each cross validation and the raw predictions mapped
     to the document the prediction was made on.
     """
     results = []

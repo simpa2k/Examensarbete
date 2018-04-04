@@ -57,4 +57,7 @@ rownames(df) <- c('Cohens \\(\\kappa\\)',
                   'Pearsons \\(r\\)', 
                   'Spearmans \\(\\rho\\)')
 
-write.csv(df, 'inter_annotator_agreement.csv', quote = FALSE)
+df <- cbind('Mått' = rownames(df), df)
+rownames(df) <- NULL
+
+write.csv(df, 'inter_annotator_agreement.csv', quote = FALSE, row.names = FALSE)
