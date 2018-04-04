@@ -31,7 +31,7 @@ class AnnotationSet:
     def describe_annotations(self, output_path):
         self.output_annotation_csv(output_path)
         self.output_normal_test(output_path)
-        self.output_inter_annotator_agreement(output_path)
+        #self.output_inter_annotator_agreement(output_path)
         self.output_annotation_plots(output_path)
 
     def output_annotation_csv(self, output_path):
