@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 
+from itertools import permutations
 from src.utils.save_data import save_as_csv, save_fig
 from src.datasets.ldo.inter_annotator_agreement import calculate_inter_annotator_agreement
 from src.utils.probability_density_function import probability_density_function_from_samples
@@ -53,7 +54,7 @@ class AnnotationSet:
 
         neutral_count = self.averaged_annotations.shape[0] - sum_class_counts
 
-        column_labels = ['Mindre läsbara', 'Neutrala', 'Mer läsbara', 'Summa mindre och mer läsbara', 'Totalt']
+        column_labels = ['Mindre läsbara', 'Neutrala', 'Mer läsbara', 'Mindre läsbara + mer läsbara', 'Totalt']
         df = pd.DataFrame([
             np.append(
                 np.insert(class_counts, 1, neutral_count),
@@ -75,6 +76,25 @@ class AnnotationSet:
     def output_inter_annotator_agreement(self, output_path):
         correlations = calculate_inter_annotator_agreement(self.unprocessed_annotations)
         correlations.to_csv(os.path.join(output_path, 'inter_annotator_agreement.csv'))
+
+        plt.subplots_adjust(hspace=0.4, wspace=0.8)
+
+        i = 1
+        for annotator_one, annotator_two in permutations([i for i in range(self.unprocessed_annotations.shape[1])], 2):
+            plt.subplot(3, 3, i)
+            plt.scatter(
+                self.unprocessed_annotations[0:, annotator_one],
+                self.unprocessed_annotations[0:, annotator_two],
+                color=['red', 'green']
+            )
+
+            plt.xlabel(annotator_one)
+            plt.ylabel(annotator_two)
+
+            i += 1
+
+        save_fig(output_path, 'annotator_scatter_plots.png', plt)
+        plt.clf()
 
     def output_annotation_plots(self, output_path):
         plt.hist(self.averaged_annotations, bins=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5])

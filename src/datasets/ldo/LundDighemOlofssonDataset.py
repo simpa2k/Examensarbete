@@ -10,6 +10,7 @@ from src.datasets.ldo.FeatureSet import FeatureSet
 from src.datasets.ldo.AnnotationSet import AnnotationSet
 
 from src.featurizers.ldo.lund_dighem_olofsson_featurizer import feature_labels
+from src.utils.save_data import save_fig
 
 
 class LundDighemOlofssonDataset():
@@ -52,6 +53,6 @@ class LundDighemOlofssonDataset():
             correlations[labels[y]][labels[x]] = r[0]
             p_values[labels[y]][labels[x]] = r[1]
 
-        correlations.round(2).to_csv(os.path.join(output_path, 'correlations.csv'))
-        p_values.round(4).to_csv(os.path.join(output_path, 'correlation_p_values.csv'))
+        correlations.round(2).to_csv(os.path.join(output_path, 'correlations.csv'), index_label='x')
+        p_values.round(4).to_csv(os.path.join(output_path, 'correlation_p_values.csv'), index_label='x')
 

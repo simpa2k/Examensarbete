@@ -1,8 +1,8 @@
 library(utils)
 library(irr)
 
-#data <- annotations[, 2:4]
-data <- a
+data <- annotations[, 2:4]
+#data <- a
 data <- as.data.frame(sapply(data, as.numeric))
 combinations <- (combn(1:ncol(data), 2))
 
@@ -58,4 +58,7 @@ rownames(df) <- c('Cohens \\(\\kappa\\)',
                   'Pearsons \\(r\\)', 
                   'Spearmans \\(\\rho\\)')
 
-write.csv(df, 'inter_annotator_agreement.csv', quote = FALSE)
+df <- cbind('Mått' = rownames(df), df)
+rownames(df) <- NULL
+
+write.csv(df, 'inter_annotator_agreement.csv', quote = FALSE, row.names = FALSE)
