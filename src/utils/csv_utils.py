@@ -38,12 +38,16 @@ def save_as_csv(output_file, data, header, fmt):
                fmt=fmt)
 
 
-def join_csv_files(output_file, input_files, column_to_join_on, column_names):
+def join_csv_files(output_file, input_files, column_to_join_on, column_names, skiprows=None):
     joined = None
 
     i = 0
     for file in input_files:
-        df = pd.read_csv(file)
+        if skiprows is not None:
+            df = pd.read_csv(file, skiprows=skiprows)
+        else:
+            df = pd.read_csv(file)
+
         df = df.set_index(column_to_join_on)
         df.columns = column_names(i)
 
@@ -58,7 +62,9 @@ def join_csv_files(output_file, input_files, column_to_join_on, column_names):
 
 
 if __name__ == '__main__':
-    join_csv_files('data/ldo/annotations.csv',
-                   ['data/ldo/simon.csv', 'data/ldo/maja_changed.csv', 'data/ldo/robert.csv'],
+    root = 'data/ldo/annotations/'
+    join_csv_files(root + 'annotations_partial.csv',
+                   [root + 'simon_changed.csv', root + 'maja_changed.csv', root + 'robert_changed.csv', root + '6.csv'],
                    'Uppgift',
-                   lambda i: ['Bedömning' + str(i)])
+                   lambda i: ['Bedömning' + str(i)],
+                   skiprows=lambda x: x > 50)
