@@ -13,7 +13,7 @@ from sklearn.ensemble.forest import RandomForestClassifier
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import make_scorer, accuracy_score
+from sklearn.metrics import make_scorer, accuracy_score, confusion_matrix
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -102,7 +102,7 @@ def save_scores_as_csv(results, output_path, k_fold_label):
 
 
 def save_results(results, output_path, k_fold_label):
-    save_scores_as_plots(results, output_path)
+    #save_scores_as_plots(results, output_path)
     save_scores_as_csv(results, output_path, k_fold_label)
 
 
@@ -140,7 +140,8 @@ def perform_experiment(X, y, estimator):
     :returns The mean weighted accuracy of each cross validation and the raw predictions mapped
     to the document the prediction was made on.
     """
-    results = []
+    columns = ['Del 1', 'Del 2', 'Del 3', 'Del 4', 'Del 5', 'Del 6', 'Del 7', 'Del 8', 'Del 9', 'Del 10', 'Medelvärde']
+    results = pd.DataFrame(columns=columns)
     predictions = create_prediction_dataframe()
 
     for i in range(0, 10):
@@ -150,13 +151,14 @@ def perform_experiment(X, y, estimator):
 
         scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
 
-        results.append(
-            cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
-        )
+        scores = cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
+        results = results.append(pd.DataFrame([[score for score in np.append(scores, [scores.mean()])]], index=['Korsvalidering {}'.format(i + 1)], columns=columns))
 
         record_predictions_for_documents(i, list(k_fold.split(X, y)), predictions, predictions_for_this_run)
 
-    return np.array(results).mean(axis=0), predictions
+    results.loc['Medelvärde'] = results.mean()
+
+    return np.array(results), predictions
 
 
 def record_predictions_for_documents(cross_validation_run, splits, data_frame, predictions_for_this_run):
@@ -192,7 +194,7 @@ def main():
 
     results, predictions = perform_experiment(X, y, estimator)
 
-    print('Mean score was:', results.mean())
+    print('Mean score was:', results.mean(axis=0).mean())
 
     save_results(results, os.path.join(args.output_directory, args.scoring_directory), k_fold_label)
     predictions.to_csv(os.path.join(args.output_directory, args.scoring_directory, 'predictions.csv'), index_label=False)
