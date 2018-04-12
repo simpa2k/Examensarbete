@@ -1,23 +1,19 @@
 import argparse
 import os
 
-import matplotlib.pyplot as mpl
 import numpy as np
 import pandas as pd
-
+from sklearn.ensemble.forest import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import make_scorer, accuracy_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble.forest import RandomForestClassifier
-
-from sklearn.model_selection import cross_val_score, StratifiedKFold
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import make_scorer, accuracy_score, confusion_matrix
+from sklearn.preprocessing import StandardScaler
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
-from src.utils.save_data import save_fig, save_as_csv
 
 
 def default_pipeline_of(estimator):
