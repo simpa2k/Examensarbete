@@ -13,8 +13,8 @@ class FeatureSet:
     def __init__(self):
         self.features = None
 
-    def load(self, path_to_projects):
-        self.features = featurize(path_to_projects)
+    def load(self, path_to_projects, force_feature_generation):
+        self.features = featurize(path_to_projects, force_feature_generation)
 
     def describe_features(self, output_path):
         self.output_feature_csv(output_path)

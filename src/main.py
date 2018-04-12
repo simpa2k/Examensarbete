@@ -70,6 +70,10 @@ def setup_parser():
                         choices=estimator_labels, required=True)
     parser.add_argument('--dataset', help='A function that loads the data to be used.',
                         default='phd', choices=dataset_labels)
+    parser.add_argument('--feature-generation',
+                        help='Whether to use previously generated features, if they exist, '
+                             'or generate new ones regardless of whether computed features exist or not.',
+                        default='previous', choices=['previous', 'force'])
 
     return parser
 
@@ -172,7 +176,11 @@ def main():
     estimator = estimators_by_label[args.estimator]
     dataset = datasets_by_label[args.dataset]
 
-    dataset.load(args.data_root, args.annotation_path)
+    force_feature_generation = False
+    if args.feature_generation == 'force':
+        force_feature_generation = True
+
+    dataset.load(args.data_root, args.annotation_path, force_feature_generation)
     dataset.describe(args.output_directory)
 
     X = dataset.get_features()

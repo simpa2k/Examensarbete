@@ -21,8 +21,8 @@ class LundDighemOlofssonDataset():
 
         plt.style.use('seaborn')
 
-    def load(self, path_to_projects, path_to_annotations):
-        self.feature_set.load(path_to_projects)
+    def load(self, path_to_projects, path_to_annotations, force_feature_generation):
+        self.feature_set.load(path_to_projects, force_feature_generation)
         self.annotation_set.load_annotations(path_to_annotations)
 
         self.data = self.annotation_set.binarized_annotations.join(self.feature_set.features)

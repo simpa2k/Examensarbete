@@ -45,7 +45,7 @@ def generate_source_meter_data_if_not_exists(path_to_project,
 def calculate_halsteads_v(path_to_project):
     project_name = os.path.basename(path_to_project)
     name_of_output_directory = project_name
-    destination_directory = '/home/simon/programmering/python/Examensarbete/data/ldo/reports/sourceMeter'
+    destination_directory = '/home/simon/programmering/Examensarbete/data/ldo/reports/sourceMeter'
 
     generate_source_meter_data_if_not_exists(path_to_project,
                                              project_name,
@@ -81,11 +81,11 @@ def featurize_project(path_to_project):
     return [loc, average_method_V, H]
 
 
-def featurize(path_to_projects):
+def featurize(path_to_projects, force_feature_generation):
     features = []
     features_path = '../data/ldo/reports/features.csv'
 
-    if not os.path.exists(features_path):
+    if not os.path.exists(features_path) or force_feature_generation:
         for root, directories, files in os.walk(path_to_projects):
             for directory in natsorted(directories):
                 if not directory.startswith('.'):
