@@ -14,13 +14,34 @@ from src.loaders.read_project import read_documents
 feature_labels = ['Rader kod', 'Halsteads V', 'Entropi']
 
 
-def count_lines_of_code(path_to_project):
+def total_lines_of_code(path_to_project):
     loc = subprocess.check_output(['cloc', '--csv', '--quiet', path_to_project])
     matrix = np.matrix(read_csv_from_string(loc.decode('utf-8')[1:],
                                             get_csv_reader(['comment', 'code'])),
                        dtype=np.float64)
 
     return np.sum(matrix)
+
+
+def mean_lines_of_code(path_to_project):
+    project_name = os.path.basename(path_to_project)
+    name_of_output_directory = project_name
+    destination_directory = '/home/simon/programmering/Examensarbete/data/ldo/reports/sourceMeter'
+
+    generate_source_meter_data_if_not_exists(path_to_project,
+                                             project_name,
+                                             name_of_output_directory,
+                                             destination_directory)
+
+    method_metrics = np.matrix(read_csv(os.path.join(destination_directory,
+                                                     name_of_output_directory,
+                                                     'java',
+                                                     project_name,
+                                                     '{}-Method.csv'.format(project_name)),
+                                        get_csv_reader(['LOC'])),
+                               dtype=np.float64)
+
+    return np.mean(remove_nan_from_array(method_metrics))
 
 
 def generate_source_meter_data_if_not_exists(path_to_project,
@@ -69,7 +90,7 @@ def calculate_entropy(path_to_project):
 
 
 def featurize_project(path_to_project):
-    loc = count_lines_of_code(path_to_project)
+    loc = mean_lines_of_code(path_to_project)
     average_method_V = calculate_halsteads_v(path_to_project)
     H = calculate_entropy(path_to_project)
 

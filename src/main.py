@@ -28,9 +28,9 @@ estimator_labels = ['mlpc', 'lr', 'nb', 'gnb', 'bnb', 'rfc']
 estimators = [
     default_pipeline_of(MLPClassifier(random_state=0)),
     default_pipeline_of(LogisticRegression()),
-    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', MultinomialNB())]),
-    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', GaussianNB())]),
-    Pipeline(steps=[('scale', MinMaxScaler()), ('estimator', BernoulliNB())]),
+    MultinomialNB(),
+    GaussianNB(),
+    BernoulliNB(),
     RandomForestClassifier(n_estimators=100, random_state=0)
 ]
 estimators_by_label = dict(zip(estimator_labels, estimators))
@@ -84,7 +84,7 @@ def save_scores_as_csv(results, output_path, k_fold_label):
 
     results.columns = np.append([i for i in range(1, 11)], 'Medelvärde')
 
-    results.round(2).to_csv(os.path.join(output_path, 'results.csv'))
+    results.round(3).to_csv(os.path.join(output_path, 'results.csv'))
 
 
 def save_results(results, output_path, k_fold_label):
