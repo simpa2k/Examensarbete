@@ -37,6 +37,7 @@ class LundDighemOlofssonDataset():
         self.feature_set.describe_features(os.path.join(output_path, 'features'))
         self.annotation_set.describe_annotations(os.path.join(output_path, 'annotations'))
         self.correlate_features_and_votes(output_path)
+        self.output_data(output_path)
 
     def correlate_features_and_votes(self, output_path):
         labels = np.concatenate((feature_labels, ['Bedömning']))
@@ -55,4 +56,11 @@ class LundDighemOlofssonDataset():
 
         correlations.round(2).to_csv(os.path.join(output_path, 'correlations.csv'), index_label='x')
         p_values.round(4).to_csv(os.path.join(output_path, 'correlation_p_values.csv'), index_label='x')
+
+    def output_data(self, output_path):
+        to_modify = pd.DataFrame(self.annotation_set.averaged_annotations, columns=['Bedömning']).join(self.feature_set.features)
+
+        to_modify.index.name = 'Uppgift'
+
+        to_modify.to_csv(os.path.join(output_path, 'data.csv'))
 

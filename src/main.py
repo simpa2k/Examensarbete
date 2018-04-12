@@ -74,35 +74,16 @@ def setup_parser():
     return parser
 
 
-def save_scores_as_plots(results, output_path):
-    mpl.plot(results, label='k_folds')
-    mpl.plot(np.full((len(results),), results.mean()), label='mean')
-    mpl.legend()
-    save_fig(output_path, 'curve.png', mpl)
-
-    mpl.clf()
-
-    mpl.boxplot(results)
-    save_fig(output_path, 'boxplot.png', mpl)
-    mpl.clf()
-
-
 def save_scores_as_csv(results, output_path, k_fold_label):
-    header = ','.join([k_fold_label + str(i) for i in range(len(results))])
-    header += ',mean'
+    results.index = np.append(['Korsvalidering {}'.format(i) for i in range(1, 11)], 'Medelvärde')
+    results.index.name = 'x'
 
-    results = np.append(results, results.mean())
+    results.columns = np.append([i for i in range(1, 11)], 'Medelvärde')
 
-    save_as_csv(
-        output_path,
-        'results.csv',
-        np.array(results)[np.newaxis],
-        header
-    )
+    results.round(2).to_csv(os.path.join(output_path, 'results.csv'))
 
 
 def save_results(results, output_path, k_fold_label):
-    #save_scores_as_plots(results, output_path)
     save_scores_as_csv(results, output_path, k_fold_label)
 
 
@@ -140,7 +121,7 @@ def perform_experiment(X, y, estimator):
     :returns The mean weighted accuracy of each cross validation and the raw predictions mapped
     to the document the prediction was made on.
     """
-    columns = ['Del 1', 'Del 2', 'Del 3', 'Del 4', 'Del 5', 'Del 6', 'Del 7', 'Del 8', 'Del 9', 'Del 10', 'Medelvärde']
+    columns = np.append([i for i in range(0, 10)], 'mean')
     results = pd.DataFrame(columns=columns)
     predictions = create_prediction_dataframe()
 
@@ -152,13 +133,18 @@ def perform_experiment(X, y, estimator):
         scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
 
         scores = cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
-        results = results.append(pd.DataFrame([[score for score in np.append(scores, [scores.mean()])]], index=['Korsvalidering {}'.format(i + 1)], columns=columns))
+        results = results.append(
+            pd.DataFrame(
+                [[score for score in np.append(scores, [scores.mean()])]],
+                columns=columns),
+            ignore_index=True
+        )
 
         record_predictions_for_documents(i, list(k_fold.split(X, y)), predictions, predictions_for_this_run)
 
-    results.loc['Medelvärde'] = results.mean()
+    results.loc['mean'] = results.mean()
 
-    return np.array(results), predictions
+    return results, predictions
 
 
 def record_predictions_for_documents(cross_validation_run, splits, data_frame, predictions_for_this_run):
