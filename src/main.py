@@ -75,12 +75,16 @@ def setup_parser():
 
 
 def save_scores_as_csv(results, output_path, k_fold_label):
-    results.index = np.append(['Korsvalidering {}'.format(i) for i in range(1, 11)], 'Medelvärde')
-    results.index.name = 'x'
+    results = pd.DataFrame(results.loc[0])
+    results.index = np.append([i for i in range(1, 11)], 'Medelvärde')
 
-    results.columns = np.append([i for i in range(1, 11)], 'Medelvärde')
+    results.index.name = 'Del'
+    results = results.rename(columns={0: 'Noggrannhet'})
 
-    results.round(3).to_csv(os.path.join(output_path, 'results.csv'))
+    results = results.round(3)
+
+    results.transpose().to_csv(os.path.join(output_path, 'results.csv'), index=False)
+    results.iloc[0:10].to_csv(os.path.join(output_path, 'plottable_results.csv'))
 
 
 def save_results(results, output_path, k_fold_label):
