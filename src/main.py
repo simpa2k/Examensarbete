@@ -11,22 +11,24 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
+from src.feature_selection.OptimalHalsteadModelSelector import OptimalHalsteadModelSelector
 
 
 def default_pipeline_of(estimator):
-    return Pipeline(steps=[('scale', StandardScaler()), ('select', SelectKBest(f_classif, k=3)), ('estimator', estimator)])
+    return Pipeline(steps=[('scale', StandardScaler()), ('select', OptimalHalsteadModelSelector()), ('estimator', estimator)])
 
 
 estimator_labels = ['mlpc', 'lr', 'nb', 'gnb', 'bnb', 'rfc']
 estimators = [
     default_pipeline_of(MLPClassifier(random_state=0)),
     default_pipeline_of(LogisticRegression()),
-    Pipeline(steps=[('select', SelectKBest(f_classif, k=3)), ('estimator', MultinomialNB())]),
-    Pipeline(steps=[('select', SelectKBest(f_classif, k=3)), ('estimator', GaussianNB())]),
+    Pipeline(steps=[('select', OptimalHalsteadModelSelector()), ('estimator', MultinomialNB())]),
+    #Pipeline(steps=[('select', SelectKBest(f_classif, k=3)), ('estimator', GaussianNB())]),
+    Pipeline(steps=[('select', OptimalHalsteadModelSelector()), ('estimator', GaussianNB())]),
     BernoulliNB(),
     RandomForestClassifier(n_estimators=100, random_state=0)
 ]
@@ -198,8 +200,8 @@ def main():
 
     y = dataset.get_annotations()
 
-    run(dataset.get_project_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_features'))
-    run(dataset.get_mean_method_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features'))
+    #run(dataset.get_project_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_features'))
+    #run(dataset.get_mean_method_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features'))
     run(dataset.get_all_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'all_features'))
 
 
