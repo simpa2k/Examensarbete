@@ -4,20 +4,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 
-from src.featurizers.ldo.lund_dighem_olofsson_featurizer import featurize, feature_labels
 from src.utils.save_data import save_as_csv, save_fig
 
 
 class FeatureSet:
-    def __init__(self):
+    def __init__(self, featurize, feature_labels):
         self.features = None
+        self.featurize = featurize
+        self.feature_labels = feature_labels
 
     def load(self, path_to_projects, force_feature_generation):
-        self.features = featurize(path_to_projects, force_feature_generation)
+        self.features = self.featurize(path_to_projects, self.feature_labels, force_feature_generation)
 
     def describe_features(self, output_path):
         self.output_feature_csv(output_path)
-        self.output_feature_plots(output_path)
+        # self.output_feature_plots(output_path)
 
     def output_feature_csv(self, output_path):
         self.output_feature_descriptive_statistics(output_path)
@@ -38,7 +39,7 @@ class FeatureSet:
         plt.subplots_adjust(hspace=0.4, wspace=0.6)
 
         i = 1
-        for x, y in itertools.permutations(feature_labels, 2):
+        for x, y in itertools.permutations(self.feature_labels, 2):
             plt.subplot(2, 3, i)
             plt.scatter(self.features[x], self.features[y])
 

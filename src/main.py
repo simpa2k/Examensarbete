@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.ensemble.forest import RandomForestClassifier
+from sklearn.feature_selection import SelectKBest, chi2, f_classif, mutual_info_classif
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer, accuracy_score
 from sklearn.model_selection import cross_val_score, StratifiedKFold
@@ -17,15 +18,15 @@ from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
 
 
 def default_pipeline_of(estimator):
-    return Pipeline(steps=[('scale', StandardScaler()), ('estimator', estimator)])
+    return Pipeline(steps=[('scale', StandardScaler()), ('select', SelectKBest(f_classif, k=3)), ('estimator', estimator)])
 
 
 estimator_labels = ['mlpc', 'lr', 'nb', 'gnb', 'bnb', 'rfc']
 estimators = [
     default_pipeline_of(MLPClassifier(random_state=0)),
     default_pipeline_of(LogisticRegression()),
-    MultinomialNB(),
-    GaussianNB(),
+    Pipeline(steps=[('select', SelectKBest(f_classif, k=3)), ('estimator', MultinomialNB())]),
+    Pipeline(steps=[('select', SelectKBest(f_classif, k=3)), ('estimator', GaussianNB())]),
     BernoulliNB(),
     RandomForestClassifier(n_estimators=100, random_state=0)
 ]
@@ -82,6 +83,9 @@ def save_scores_as_csv(results, output_path, k_fold_label):
     results = results.rename(columns={0: 'Noggrannhet'})
 
     results = results.round(3)
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     results.transpose().to_csv(os.path.join(output_path, 'results.csv'), index=False)
     results.iloc[0:10].to_csv(os.path.join(output_path, 'plottable_results.csv'))
@@ -167,6 +171,15 @@ def record_predictions_for_documents(cross_validation_run, splits, data_frame, p
         i = i + 1
 
 
+def run(X, y, estimator, output_directory, scoring_directory):
+    results, predictions = perform_experiment(X, y, estimator)
+
+    print('Mean score was:', results.mean(axis=0).mean())
+
+    save_results(results, os.path.join(output_directory, scoring_directory), '')
+    predictions.to_csv(os.path.join(output_directory, scoring_directory, 'predictions.csv'), index_label=False)
+
+
 def main():
     parser = setup_parser()
     args = parser.parse_args()
@@ -183,15 +196,11 @@ def main():
     dataset.load(args.data_root, args.annotation_path, force_feature_generation)
     dataset.describe(args.output_directory)
 
-    X = dataset.get_features()
     y = dataset.get_annotations()
 
-    results, predictions = perform_experiment(X, y, estimator)
-
-    print('Mean score was:', results.mean(axis=0).mean())
-
-    save_results(results, os.path.join(args.output_directory, args.scoring_directory), k_fold_label)
-    predictions.to_csv(os.path.join(args.output_directory, args.scoring_directory, 'predictions.csv'), index_label=False)
+    run(dataset.get_project_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_features'))
+    run(dataset.get_mean_method_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features'))
+    run(dataset.get_all_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'all_features'))
 
 
 if __name__ == '__main__':
