@@ -81,7 +81,8 @@ def calculate_halsteads_v(path_to_project):
                                         get_csv_reader(['HVOL'])),
                                dtype=np.float64)
 
-    return np.mean(remove_nan_from_array(method_metrics))
+    #return np.mean(remove_nan_from_array(method_metrics))
+    return np.sum(remove_nan_from_array(method_metrics))
 
 
 def calculate_entropy(path_to_project):
@@ -91,6 +92,7 @@ def calculate_entropy(path_to_project):
 
 def featurize_project(path_to_project):
     loc = mean_lines_of_code(path_to_project)
+    #loc = total_lines_of_code(path_to_project)
     average_method_V = calculate_halsteads_v(path_to_project)
     H = calculate_entropy(path_to_project)
 

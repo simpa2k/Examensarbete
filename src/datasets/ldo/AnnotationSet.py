@@ -22,7 +22,7 @@ class AnnotationSet:
         self.annotation_column = 'Label'
 
     def load_annotations(self, path_to_annotations):
-        self.unprocessed_annotations = np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:4]
+        self.unprocessed_annotations = np.genfromtxt(path_to_annotations, delimiter=',')[1:, 1:5]
         self.averaged_annotations = self.unprocessed_annotations.mean(axis=1)
 
         averaged_as_dataset = pd.DataFrame(self.averaged_annotations, columns=[self.annotation_column])

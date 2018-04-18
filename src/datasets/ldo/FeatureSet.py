@@ -1,9 +1,8 @@
-import os
 import itertools
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
-import matplotlib.pyplot as plt
 
 from src.featurizers.ldo.lund_dighem_olofsson_featurizer import featurize, feature_labels
 from src.utils.save_data import save_as_csv, save_fig
