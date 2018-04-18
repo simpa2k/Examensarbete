@@ -16,8 +16,8 @@ from src.utils.save_data import save_fig
 class LundDighemOlofssonDataset():
     def __init__(self):
         feature_labels = ['Rader kod', 'Halsteads V', 'Entropi']
-        all_feature_labels = ['Rader kod, projekt', 'Halsteads V, projekt', 'Entropi, projekt',
-                              'Rader kod, medelvärde metod', 'Halsteads V, medelvärde metod']
+        all_feature_labels = ['Rader kod projekt', 'Halsteads V projekt', 'Entropi projekt',
+                              'Rader kod medelvärde metod', 'Halsteads V medelvärde metod']
 
         self.project_level_feature_set = FeatureSet(
             get_featurizer(featurize_project_with_project_level_features, 'project_level_features.csv'),
