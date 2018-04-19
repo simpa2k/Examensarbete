@@ -1,7 +1,7 @@
 library(utils)
 library(irr)
 
-data <- annotations[, 2:4]
+data <- annotations[, 2:5]
 data <- as.data.frame(sapply(data, as.numeric))
 combinations <- (combn(1:ncol(data), 2))
 

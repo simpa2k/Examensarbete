@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import numpy as np
 import pandas as pd
 from natsort import natsorted
@@ -63,8 +64,11 @@ def join_csv_files(output_file, input_files, column_to_join_on, column_names, sk
 
 if __name__ == '__main__':
     root = 'data/ldo/annotations/'
-    join_csv_files(root + 'annotations_partial.csv',
-                   [root + 'simon_changed.csv', root + 'maja_changed.csv', root + 'robert_changed.csv', root + '6.csv'],
+
+    def with_root(path):
+        return os.path.join(root, path)
+
+    join_csv_files(with_root('annotations.csv'),
+                   [with_root('simon_changed.csv'), with_root('maja_changed.csv'), with_root('robert_changed.csv'), with_root('6.csv')],
                    'Uppgift',
-                   lambda i: ['Bedömning' + str(i)],
-                   skiprows=lambda x: x > 50)
+                   lambda i: ['Bedömning' + str(i)])
