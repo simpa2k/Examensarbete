@@ -19,7 +19,7 @@ from src.feature_selection.OptimalHalsteadModelSelector import OptimalHalsteadMo
 
 
 def default_pipeline_of(estimator):
-    return Pipeline(steps=[('scale', StandardScaler()), ('select', OptimalHalsteadModelSelector()), ('estimator', estimator)])
+    return Pipeline(steps=[('scale', StandardScaler()), ('estimator', estimator)])
 
 
 estimator_labels = ['mlpc', 'lr', 'nb', 'gnb', 'bnb', 'rfc']
@@ -201,6 +201,8 @@ def main():
 
     #run(dataset.get_project_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_features'))
     #run(dataset.get_mean_method_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features'))
+    #run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V'))
+    #run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V'))
     run(dataset.get_all_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'all_features'))
 
 

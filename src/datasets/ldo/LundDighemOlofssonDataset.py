@@ -9,7 +9,7 @@ from scipy.stats import spearmanr
 from src.datasets.ldo.FeatureSet import FeatureSet
 from src.datasets.ldo.AnnotationSet import AnnotationSet
 
-from src.featurizers.ldo.lund_dighem_olofsson_featurizer import get_featurizer, featurize_project_with_project_level_features, featurize_project_with_mean_method_level_features, featurize_project_with_all_features
+from src.featurizers.ldo.lund_dighem_olofsson_featurizer import get_featurizer, featurize_project_with_project_level_features, featurize_project_with_mean_method_level_features, featurize_project_with_all_features, featurize_project_with_mean_method_level_loc_and_project_V, featurize_project_with_project_level_loc_and_mean_method_level_V
 from src.utils.save_data import save_fig
 
 
@@ -31,6 +31,14 @@ class LundDighemOlofssonDataset():
             get_featurizer(featurize_project_with_all_features, 'all_features.csv'),
             all_feature_labels
         )
+        self.method_level_loc_project_level_V_feature_set = FeatureSet(
+            get_featurizer(featurize_project_with_mean_method_level_loc_and_project_V, 'method_level_loc_project_level_V.csv'),
+            feature_labels
+        )
+        self.project_level_loc_method_level_V_feature_set = FeatureSet(
+            get_featurizer(featurize_project_with_project_level_loc_and_mean_method_level_V, 'project_level_loc_method_level_V.csv'),
+            feature_labels
+        )
 
         self.annotation_set = AnnotationSet()
         self.data = None
@@ -41,12 +49,16 @@ class LundDighemOlofssonDataset():
         self.project_level_feature_set.load(path_to_projects, force_feature_generation)
         self.mean_method_level_feature_set.load(path_to_projects, force_feature_generation)
         self.complete_feature_set.load(path_to_projects, force_feature_generation)
+        self.method_level_loc_project_level_V_feature_set.load(path_to_projects, force_feature_generation)
+        self.project_level_loc_method_level_V_feature_set.load(path_to_projects, force_feature_generation)
 
         self.annotation_set.load_annotations(path_to_annotations)
 
         self.project_level_feature_data = self.annotation_set.binarized_annotations.join(self.project_level_feature_set.features)
         self.mean_method_level_feature_data = self.annotation_set.binarized_annotations.join(self.mean_method_level_feature_set.features)
         self.complete_feature_data = self.annotation_set.binarized_annotations.join(self.complete_feature_set.features)
+        self.method_level_loc_project_level_V_data = self.annotation_set.binarized_annotations.join(self.method_level_loc_project_level_V_feature_set.features)
+        self.project_level_loc_method_level_V_data = self.annotation_set.binarized_annotations.join(self.project_level_loc_method_level_V_feature_set.features)
 
     def get_project_level_features(self):
         return self.project_level_feature_data[self.project_level_feature_set.feature_labels].as_matrix()
@@ -57,6 +69,12 @@ class LundDighemOlofssonDataset():
     def get_all_features(self):
         return self.complete_feature_data[self.complete_feature_set.feature_labels].as_matrix()
 
+    def get_project_level_loc_method_level_V_features(self):
+        return self.project_level_loc_method_level_V_data[self.project_level_loc_method_level_V_feature_set.feature_labels].as_matrix()
+
+    def get_method_level_loc_project_level_V_features(self):
+        return self.method_level_loc_project_level_V_data[self.method_level_loc_project_level_V_feature_set.feature_labels].as_matrix()
+
     def get_annotations(self):
         return self.project_level_feature_data[self.annotation_set.annotation_column].as_matrix()
 
@@ -64,16 +82,22 @@ class LundDighemOlofssonDataset():
         self.project_level_feature_set.describe_features(os.path.join(output_path, 'features/project_level_features'))
         self.mean_method_level_feature_set.describe_features(os.path.join(output_path, 'features/mean_method_level_features'))
         self.complete_feature_set.describe_features(os.path.join(output_path, 'features/all_features'))
+        self.project_level_loc_method_level_V_feature_set.describe_features(os.path.join(output_path, 'features/project_level_loc_method_level_V'))
+        self.method_level_loc_project_level_V_feature_set.describe_features(os.path.join(output_path, 'features/method_level_loc_project_level_V'))
 
         self.annotation_set.describe_annotations(os.path.join(output_path, 'annotations'))
 
         self.correlate_features_and_votes(self.project_level_feature_set, os.path.join(output_path, 'features/project_level_features'))
         self.correlate_features_and_votes(self.mean_method_level_feature_set, os.path.join(output_path, 'features/mean_method_level_features'))
         self.correlate_features_and_votes(self.complete_feature_set, os.path.join(output_path, 'features/all_features'))
+        self.correlate_features_and_votes(self.project_level_loc_method_level_V_feature_set, os.path.join(output_path, 'features/project_level_loc_method_level_V'))
+        self.correlate_features_and_votes(self.method_level_loc_project_level_V_feature_set, os.path.join(output_path, 'features/method_level_loc_project_level_V'))
 
         self.output_data(self.project_level_feature_set, os.path.join(output_path, 'annotations_and_project_level_features.csv'))
         self.output_data(self.mean_method_level_feature_set, os.path.join(output_path, 'annotations_and_mean_method_level_features.csv'))
         self.output_data(self.complete_feature_set, os.path.join(output_path, 'annotations_and_all_features.csv'))
+        self.output_data(self.project_level_loc_method_level_V_feature_set, os.path.join(output_path, 'annotations_and_project_level_loc_method_level_V_features.csv'))
+        self.output_data(self.method_level_loc_project_level_V_feature_set, os.path.join(output_path, 'annotations_and_method_level_loc_project_level_V_features.csv'))
 
     def correlate_features_and_votes(self, feature_set, output_path):
         labels = np.concatenate((feature_set.feature_labels, ['Bedömning']))
