@@ -1,4 +1,7 @@
-from scipy.stats import spearmanr
+import itertools
+
+import numpy as np
+from scipy.stats import spearmanr, pearsonr
 
 
 class OptimalHalsteadModelSelector:
