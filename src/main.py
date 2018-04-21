@@ -4,13 +4,15 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.ensemble.forest import RandomForestClassifier
+from sklearn.feature_selection import RFE
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer, accuracy_score
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -203,6 +205,7 @@ def main():
     run(dataset.get_mean_method_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features'))
     run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V'))
     run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V'))
+    run(dataset.get_all_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'all_features'))
 
 
 if __name__ == '__main__':
