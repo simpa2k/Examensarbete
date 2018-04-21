@@ -3,20 +3,17 @@ import os
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.ensemble.forest import RandomForestClassifier
-from sklearn.feature_selection import SelectKBest, chi2, f_classif, mutual_info_classif, RFECV
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer, accuracy_score
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
-from src.feature_selection.OptimalHalsteadModelSelector import OptimalHalsteadModelSelector
 
 
 def default_pipeline_of(estimator):
@@ -91,6 +88,8 @@ def save_scores_as_csv(results, output_path, k_fold_label):
 
     results.transpose().to_csv(os.path.join(output_path, 'results.csv'), index=False)
     results.iloc[0:10].to_csv(os.path.join(output_path, 'plottable_results.csv'))
+    results['Noggrannhet'].iloc[0:9].to_csv(os.path.join(output_path, 'boxplottable_results.csv'), index=False)
+    results.agg(['max', 'min', 'mean']).transpose().to_csv(os.path.join(output_path, 'errorplottable_results.csv'), index=False)
 
 
 def save_results(results, output_path, k_fold_label):
