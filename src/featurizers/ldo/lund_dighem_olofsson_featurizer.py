@@ -137,6 +137,31 @@ def featurize_project_with_mean_method_level_features(path_to_project):
     return [loc, average_method_V, H]
 
 
+def featurize_project_with_mean_method_level_loc_and_project_V(path_to_project):
+    loc = mean_lines_of_code(path_to_project)
+    total_method_V = calculate_total_halsteads_v(path_to_project)
+    H = calculate_entropy(path_to_project)
+
+    print('Featurized project: {}\n\tLOC: {}\n\tV: {}\n\tH: {}'.format(os.path.basename(path_to_project),
+                                                                       loc,
+                                                                       total_method_V,
+                                                                       H))
+
+    return [loc, total_method_V, H]
+
+def featurize_project_with_project_level_loc_and_mean_method_level_V(path_to_project):
+    loc = total_lines_of_code(path_to_project)
+    average_method_V = calculate_mean_halsteads_v(path_to_project)
+    H = calculate_entropy(path_to_project)
+
+    print('Featurized project: {}\n\tLOC: {}\n\tV: {}\n\tH: {}'.format(os.path.basename(path_to_project),
+                                                                       loc,
+                                                                       average_method_V,
+                                                                       H))
+
+    return [loc, average_method_V, H]
+
+
 def featurize_project_with_all_features(path_to_project):
     project_level_features = featurize_project_with_project_level_features(path_to_project)
     mean_method_level_features = featurize_project_with_mean_method_level_features(path_to_project)
