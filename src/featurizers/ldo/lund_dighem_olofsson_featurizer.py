@@ -67,7 +67,8 @@ def generate_source_meter_data_if_not_exists(path_to_project,
 def calculate_total_halsteads_v(path_to_project):
     project_name = os.path.basename(path_to_project)
     name_of_output_directory = project_name
-    destination_directory = '/home/simon/programmering/Examensarbete/data/ldo/reports/sourceMeter'
+    #destination_directory = '/home/simon/programmering/Examensarbete/data/ldo/reports/sourceMeter'
+    destination_directory = '../data/ldo/reports/sourceMeter'
 
     generate_source_meter_data_if_not_exists(path_to_project,
                                              project_name,
