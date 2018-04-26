@@ -76,7 +76,7 @@ def setup_parser():
 
 def save_scores_as_csv(results, output_path, k_fold_label):
     results = pd.DataFrame(results.loc[0])
-    results.index = np.append([i for i in range(1, 11)], 'Medelvärde')
+    results.index = np.append([i for i in range(1, 11)], ['Medelvärde', 'Standardavvikelse'])
 
     results.index.name = 'Del'
     results = results.rename(columns={0: 'Noggrannhet'})
@@ -89,7 +89,7 @@ def save_scores_as_csv(results, output_path, k_fold_label):
     results.transpose().to_csv(os.path.join(output_path, 'results.csv'), index=False)
     results.iloc[0:10].to_csv(os.path.join(output_path, 'plottable_results.csv'))
     results['Noggrannhet'].iloc[0:9].to_csv(os.path.join(output_path, 'boxplottable_results.csv'), index=False)
-    results.agg(['max', 'min', 'mean']).transpose().to_csv(os.path.join(output_path, 'errorplottable_results.csv'), index=False)
+    results.iloc[10:13].transpose().to_csv(os.path.join(output_path, 'errorplottable_results.csv'), index=False)
 
 
 def save_results(results, output_path, k_fold_label):
@@ -130,7 +130,7 @@ def perform_experiment(X, y, estimator):
     :returns The mean weighted accuracy of each cross validation and the raw predictions mapped
     to the document the prediction was made on.
     """
-    columns = np.append([i for i in range(0, 10)], 'mean')
+    columns = np.append([i for i in range(0, 10)], ['mean', 'std'])
     results = pd.DataFrame(columns=columns)
     predictions = create_prediction_dataframe()
 
@@ -144,7 +144,7 @@ def perform_experiment(X, y, estimator):
         scores = cross_val_score(estimator, X, y, cv=k_fold, scoring='accuracy')
         results = results.append(
             pd.DataFrame(
-                [[score for score in np.append(scores, [scores.mean()])]],
+                [[score for score in np.append(scores, [scores.mean(), scores.std()])]],
                 columns=columns),
             ignore_index=True
         )
@@ -175,7 +175,7 @@ def record_predictions_for_documents(cross_validation_run, splits, data_frame, p
 def run(X, y, estimator, output_directory, scoring_directory):
     results, predictions = perform_experiment(X, y, estimator)
 
-    print('Mean score was:', results.mean(axis=0).mean())
+    print('Mean score was:', results['mean'].mean())
 
     save_results(results, os.path.join(output_directory, scoring_directory), '')
     predictions.to_csv(os.path.join(output_directory, scoring_directory, 'predictions.csv'), index_label=False)
