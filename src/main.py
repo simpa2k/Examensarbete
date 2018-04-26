@@ -4,15 +4,13 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.ensemble.forest import RandomForestClassifier
-from sklearn.feature_selection import RFE
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import make_scorer, accuracy_score
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -141,9 +139,9 @@ def perform_experiment(X, y, estimator):
 
         predictions_for_this_run = []
 
-        scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
+        #scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
 
-        scores = cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
+        scores = cross_val_score(estimator, X, y, cv=k_fold, scoring='accuracy')
         results = results.append(
             pd.DataFrame(
                 [[score for score in np.append(scores, [scores.mean()])]],
