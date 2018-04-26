@@ -3,17 +3,19 @@ import os
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble.forest import RandomForestClassifier
+from sklearn.ensemble.forest import RandomForestClassifier, ExtraTreesClassifier
+from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
+from src.feature_selection.LoggingFeatureSelector import LoggingFeatureSelector
 
 
 def default_pipeline_of(estimator):
@@ -25,7 +27,7 @@ estimators = [
     default_pipeline_of(MLPClassifier(random_state=0)),
     default_pipeline_of(LogisticRegression()),
     MultinomialNB(),
-    GaussianNB(),
+    make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), GaussianNB()),
     BernoulliNB(),
     RandomForestClassifier(n_estimators=100, random_state=0)
 ]
