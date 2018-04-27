@@ -1,12 +1,14 @@
 import argparse
 import os
+import itertools
 
 import numpy as np
 import pandas as pd
+from pandas_ml import ConfusionMatrix
 from sklearn.ensemble.forest import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, make_scorer, confusion_matrix
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
@@ -27,7 +29,8 @@ estimators = [
     default_pipeline_of(MLPClassifier(random_state=0)),
     default_pipeline_of(LogisticRegression()),
     MultinomialNB(),
-    make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), GaussianNB()),
+    #make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), GaussianNB()),
+    GaussianNB(),
     BernoulliNB(),
     RandomForestClassifier(n_estimators=100, random_state=0)
 ]
@@ -104,12 +107,14 @@ def weighted_accuracy(y_true, y_pred, prediction_gatherer=None):
 
     """
     From: https://www.quora.com/How-do-you-measure-the-accuracy-score-for-each-class-when-testing-classifier-in-sklearn
-    """
     w = np.ones(y_true.shape[0])
     for idx, i in enumerate(np.bincount(y_true)):
         w[y_true == idx] *= (i/float(y_true.shape[0]))
 
-    return accuracy_score(y_true, y_pred, sample_weight=w)
+    #return accuracy_score(y_true, y_pred, sample_weight=w)
+    """
+
+    return accuracy_score(y_true, y_pred)
 
 
 def create_prediction_dataframe():
@@ -141,9 +146,9 @@ def perform_experiment(X, y, estimator):
 
         predictions_for_this_run = []
 
-        #scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
+        scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
 
-        scores = cross_val_score(estimator, X, y, cv=k_fold, scoring='accuracy')
+        scores = cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
         results = results.append(
             pd.DataFrame(
                 [[score for score in np.append(scores, [scores.mean(), scores.std()])]],
@@ -174,13 +179,45 @@ def record_predictions_for_documents(cross_validation_run, splits, data_frame, p
         i = i + 1
 
 
-def run(X, y, estimator, output_directory, scoring_directory):
+def save_confusion_matrix(human_to_model_mapping, output_directory, scoring_directory):
+    cm = confusion_matrix(human_to_model_mapping['human'], human_to_model_mapping['model'])
+
+    # Normalize
+    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    columns = ['x', 'y', 'c']
+    plottable_matrix_data = pd.concat(
+        [pd.DataFrame([[x, y, cm[x, y]]], columns=columns).round(3) for x, y in sorted(itertools.product([0, 1], repeat=2), key=lambda x: x[1])]  # The sorting is needed for pgfplots to be able to draw the matrix plot correctly.
+    )
+
+    plottable_matrix_data.to_csv(
+        os.path.join(output_directory, scoring_directory, 'plottable_confusion_matrix.csv'),
+        index=False
+    )
+
+
+def run(X, y, estimator, annotations_by_document, output_directory, scoring_directory):
     results, predictions = perform_experiment(X, y, estimator)
+    human_to_model_mapping = map_predictions_to_annotations(annotations_by_document, predictions)
 
     print('Mean score was:', results['mean'].mean())
 
     save_results(results, os.path.join(output_directory, scoring_directory), '')
+    save_confusion_matrix(human_to_model_mapping, output_directory, scoring_directory)
     predictions.to_csv(os.path.join(output_directory, scoring_directory, 'predictions.csv'), index_label=False)
+
+
+def map_predictions_to_annotations(annotations, predictions):
+    transposed = predictions.transpose()
+    without_nan = transposed.dropna()
+    with_dropped_index = without_nan.reset_index()[['Class', 'Document']]
+    grouped = with_dropped_index.astype(int).groupby(['Document'])
+    with_single_prediction = grouped.mean()  # Currently, predictions are always the same for each document so there will be a single binary classification for each one.
+
+    human_to_model_mapping = annotations.reset_index().join(with_single_prediction).set_index('document')
+    human_to_model_mapping.columns = ['human', 'model']
+
+    return human_to_model_mapping
 
 
 def main():
@@ -201,11 +238,19 @@ def main():
 
     y = dataset.get_annotations()
 
-    run(dataset.get_project_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_features'))
-    run(dataset.get_mean_method_level_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features'))
-    run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V'))
-    run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V'))
-    run(dataset.get_all_features(), y, estimator, args.output_directory, os.path.join(args.scoring_directory, 'all_features'))
+    run(dataset.get_project_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_features')),
+    run(dataset.get_mean_method_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features')),
+    run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V')),
+    run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V')),
+    run(dataset.get_all_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'all_features'))
+    run(
+        dataset.get_all_features(),
+        y,
+        make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), estimator),
+        dataset.get_binarized_annotations_by_document(),
+        args.output_directory,
+        os.path.join(args.scoring_directory, 'with_feature_selection')
+    )
 
 
 if __name__ == '__main__':

@@ -78,6 +78,12 @@ class LundDighemOlofssonDataset():
     def get_annotations(self):
         return self.project_level_feature_data[self.annotation_set.annotation_column].as_matrix()
 
+    def get_binarized_annotations_by_document(self):
+        binarized_annotations = self.annotation_set.binarized_annotations.copy()
+        binarized_annotations.index.name = 'document'
+
+        return binarized_annotations
+
     def describe(self, output_path):
         self.project_level_feature_set.describe_features(os.path.join(output_path, 'features/project_level_features'))
         self.mean_method_level_feature_set.describe_features(os.path.join(output_path, 'features/mean_method_level_features'))
