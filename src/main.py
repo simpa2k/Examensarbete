@@ -1,6 +1,7 @@
 import argparse
 import os
 import itertools
+from functools import reduce
 
 import numpy as np
 import pandas as pd
@@ -96,9 +97,11 @@ def save_scores_as_csv(results, output_path, k_fold_label):
     results['Noggrannhet'].iloc[0:9].to_csv(os.path.join(output_path, 'boxplottable_results.csv'), index=False)
     results.iloc[10:13].transpose().to_csv(os.path.join(output_path, 'errorplottable_results.csv'), index=False)
 
+    return results
+
 
 def save_results(results, output_path, k_fold_label):
-    save_scores_as_csv(results, output_path, k_fold_label)
+    return save_scores_as_csv(results, output_path, k_fold_label)
 
 
 def weighted_accuracy(y_true, y_pred, prediction_gatherer=None):
@@ -202,9 +205,11 @@ def run(X, y, estimator, annotations_by_document, output_directory, scoring_dire
 
     print('Mean score was:', results['mean'].mean())
 
-    save_results(results, os.path.join(output_directory, scoring_directory), '')
+    formatted_results = save_results(results, os.path.join(output_directory, scoring_directory), '')
     save_confusion_matrix(human_to_model_mapping, output_directory, scoring_directory)
     predictions.to_csv(os.path.join(output_directory, scoring_directory, 'predictions.csv'), index_label=False)
+
+    return formatted_results
 
 
 def map_predictions_to_annotations(annotations, predictions):
@@ -218,6 +223,22 @@ def map_predictions_to_annotations(annotations, predictions):
     human_to_model_mapping.columns = ['human', 'model']
 
     return human_to_model_mapping
+
+
+def save_common_results(data_frames, output_directory):
+    concatenated = pd.concat([data_frame.transpose() for data_frame in data_frames]) # All CV results are the same anyway, just choose the first one.
+    concatenated = concatenated\
+        .reset_index()\
+        .drop('index', axis=1)
+
+    concatenated.index.name = 'x'
+
+    concatenated.to_csv(os.path.join(output_directory, 'results.csv'))
+
+    errorplottable = concatenated.copy()[['Medelvärde', 'Standardavvikelse']]
+    errorplottable.columns = ['mean', 'std']
+
+    errorplottable.to_csv(os.path.join(output_directory, 'errorplottable_results.csv'))
 
 
 def main():
@@ -238,19 +259,23 @@ def main():
 
     y = dataset.get_annotations()
 
-    run(dataset.get_project_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_features')),
-    run(dataset.get_mean_method_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features')),
-    run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V')),
-    run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V')),
-    run(dataset.get_all_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'all_features'))
-    run(
-        dataset.get_all_features(),
-        y,
-        make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), estimator),
-        dataset.get_binarized_annotations_by_document(),
-        args.output_directory,
-        os.path.join(args.scoring_directory, 'with_feature_selection')
-    )
+    results = [
+        run(dataset.get_project_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_features')),
+        run(dataset.get_mean_method_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features')),
+        run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V')),
+        run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V')),
+        run(dataset.get_all_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'all_features')),
+        run(
+            dataset.get_all_features(),
+            y,
+            make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), estimator),
+            dataset.get_binarized_annotations_by_document(),
+            args.output_directory,
+            os.path.join(args.scoring_directory, 'with_feature_selection')
+        )
+    ]
+
+    save_common_results(results, os.path.join(args.output_directory, args.scoring_directory))
 
 
 if __name__ == '__main__':
