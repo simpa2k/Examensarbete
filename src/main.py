@@ -1,24 +1,23 @@
 import argparse
 import os
 import itertools
-from functools import reduce
 
 import numpy as np
 import pandas as pd
-from pandas_ml import ConfusionMatrix
-from sklearn.ensemble.forest import RandomForestClassifier, ExtraTreesClassifier
-from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble.forest import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, make_scorer, confusion_matrix
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.metrics import accuracy_score, make_scorer, confusion_matrix, precision_score
+from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
 from src.feature_selection.LoggingFeatureSelector import LoggingFeatureSelector
+from src.scoring.negative_predictive_value import negative_predictive_value
+from src.scoring.plot_roc_curve import plot_cv_roc_curve, plot_final_roc_curve
 
 
 def default_pipeline_of(estimator):
@@ -81,21 +80,25 @@ def setup_parser():
 
 
 def save_scores_as_csv(results, output_path, k_fold_label):
-    results = pd.DataFrame(results.loc[0])
-    results.index = np.append([i for i in range(1, 11)], ['Medelvärde', 'Standardavvikelse'])
+    for score_label, scoring in results.items():
+        scoring = pd.DataFrame(scoring.loc[0])
+        scoring.index = np.append([i for i in range(1, 11)], ['Medelvärde', 'Standardavvikelse'])
 
-    results.index.name = 'Del'
-    results = results.rename(columns={0: 'Noggrannhet'})
+        scoring.index.name = 'Del'
+        scoring = scoring.rename(columns={0: score_label})
 
-    results = results.round(3)
+        scoring = scoring.round(3)
 
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+        score_directory = os.path.join(output_path, score_label)
+        if not os.path.exists(score_directory):
+            os.makedirs(score_directory)
 
-    results.transpose().to_csv(os.path.join(output_path, 'results.csv'), index=False)
-    results.iloc[0:10].to_csv(os.path.join(output_path, 'plottable_results.csv'))
-    results['Noggrannhet'].iloc[0:9].to_csv(os.path.join(output_path, 'boxplottable_results.csv'), index=False)
-    results.iloc[10:13].transpose().to_csv(os.path.join(output_path, 'errorplottable_results.csv'), index=False)
+        scoring.transpose().to_csv(os.path.join(score_directory, 'results.csv'), index=False)
+        scoring.iloc[0:10].to_csv(os.path.join(score_directory, 'plottable_results.csv'))
+        scoring[score_label].iloc[0:9].to_csv(os.path.join(score_directory, 'boxplottable_results.csv'), index=False)
+        scoring.iloc[10:13].transpose().to_csv(os.path.join(score_directory, 'errorplottable_results.csv'), index=False)
+
+        results[score_label] = scoring
 
     return results
 
@@ -141,7 +144,14 @@ def perform_experiment(X, y, estimator):
     to the document the prediction was made on.
     """
     columns = np.append([i for i in range(0, 10)], ['mean', 'std'])
-    results = pd.DataFrame(columns=columns)
+
+    results = {
+        'accuracy': pd.DataFrame(columns=columns),
+        'precision': pd.DataFrame(columns=columns),
+        'npv': pd.DataFrame(columns=columns),
+        'roc_auc': pd.DataFrame(columns=columns)
+    }
+
     predictions = create_prediction_dataframe()
 
     for i in range(0, 10):
@@ -149,19 +159,48 @@ def perform_experiment(X, y, estimator):
 
         predictions_for_this_run = []
 
-        scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
+        #scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
+        scoring = {
+            'accuracy': make_scorer(accuracy_score),
+            'precision': make_scorer(precision_score),
+            'npv': make_scorer(negative_predictive_value),
+            'roc_auc': make_scorer(plot_cv_roc_curve, needs_proba=True)
+        }
 
-        scores = cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
-        results = results.append(
+        #scores = cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
+        scores = cross_validate(estimator, X, y, cv=k_fold, scoring=scoring)
+
+        results['accuracy'] = results['accuracy'].append(
             pd.DataFrame(
-                [[score for score in np.append(scores, [scores.mean(), scores.std()])]],
+                [[score for score in np.append(scores['test_accuracy'], [scores['test_accuracy'].mean(), scores['test_accuracy'].std()])]],
+                columns=columns),
+            ignore_index=True
+        )
+
+        results['precision'] = results['precision'].append(
+            pd.DataFrame(
+                [[score for score in np.append(scores['test_precision'], [scores['test_precision'].mean(), scores['test_precision'].std()])]],
+                columns=columns),
+            ignore_index=True
+        )
+
+        results['npv'] = results['npv'].append(
+            pd.DataFrame(
+                [[score for score in np.append(scores['test_npv'], [scores['test_npv'].mean(), scores['test_npv'].std()])]],
+                columns=columns),
+            ignore_index=True
+        )
+
+        results['roc_auc'] = results['roc_auc'].append(
+            pd.DataFrame(
+                [[score for score in np.append(scores['test_roc_auc'], [scores['test_roc_auc'].mean(), scores['test_roc_auc'].std()])]],
                 columns=columns),
             ignore_index=True
         )
 
         record_predictions_for_documents(i, list(k_fold.split(X, y)), predictions, predictions_for_this_run)
 
-    results.loc['mean'] = results.mean()
+    plot_final_roc_curve()
 
     return results, predictions
 
@@ -185,6 +224,13 @@ def record_predictions_for_documents(cross_validation_run, splits, data_frame, p
 def save_confusion_matrix(human_to_model_mapping, output_directory, scoring_directory):
     cm = confusion_matrix(human_to_model_mapping['human'], human_to_model_mapping['model'])
 
+    np.savetxt(
+        os.path.join(output_directory, scoring_directory, 'confusion_matrix.csv'),
+        cm,
+        delimiter=',',
+        fmt='%5.0f'
+    )
+
     # Normalize
     cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
@@ -201,12 +247,15 @@ def save_confusion_matrix(human_to_model_mapping, output_directory, scoring_dire
 
 def run(X, y, estimator, annotations_by_document, output_directory, scoring_directory):
     results, predictions = perform_experiment(X, y, estimator)
-    human_to_model_mapping = map_predictions_to_annotations(annotations_by_document, predictions)
+    #human_to_model_mapping = map_predictions_to_annotations(annotations_by_document, predictions)
 
-    print('Mean score was:', results['mean'].mean())
+    #print('Mean accuracy score was:', results['accuracy']['mean'].mean())
+    #print('Mean precision score was:', results['precision']['mean'].mean())
+    for score_label, scoring in results.items():
+        print('Mean {} score was: {}'.format(score_label, scoring['mean'].mean()))
 
     formatted_results = save_results(results, os.path.join(output_directory, scoring_directory), '')
-    save_confusion_matrix(human_to_model_mapping, output_directory, scoring_directory)
+    #save_confusion_matrix(human_to_model_mapping, output_directory, scoring_directory)
     predictions.to_csv(os.path.join(output_directory, scoring_directory, 'predictions.csv'), index_label=False)
 
     return formatted_results
@@ -225,7 +274,9 @@ def map_predictions_to_annotations(annotations, predictions):
     return human_to_model_mapping
 
 
-def save_common_results(data_frames, output_directory):
+def save_common_results(scoring_dicts, output_directory):
+    save_common_results_without_transpose([scoring_dict['accuracy'].transpose() for scoring_dict in scoring_dicts], output_directory, 'results.csv', 'errorplottable_results.csv')
+    """
     concatenated = pd.concat([data_frame.transpose() for data_frame in data_frames]) # All CV results are the same anyway, just choose the first one.
     concatenated = concatenated\
         .reset_index()\
@@ -239,6 +290,46 @@ def save_common_results(data_frames, output_directory):
     errorplottable.columns = ['mean', 'std']
 
     errorplottable.to_csv(os.path.join(output_directory, 'errorplottable_results.csv'))
+    """
+
+
+def save_common_results_without_transpose(data_frames, output_directory, results_filename, errorplottable_results_filename):
+    concatenated = pd.concat([data_frame for data_frame in data_frames], ignore_index=True) # All CV results are the same anyway, just choose the first one.
+    #concatenated = concatenated \
+    #    .reset_index() \
+    #    .drop('index', axis=1)
+
+    concatenated.index.name = 'x'
+
+    concatenated.to_csv(os.path.join(output_directory, results_filename))
+
+    errorplottable = concatenated.copy()[['Medelvärde', 'Standardavvikelse']]
+    errorplottable.columns = ['mean', 'std']
+
+    errorplottable.to_csv(os.path.join(output_directory, errorplottable_results_filename))
+
+
+def save_feature_selection_results(output_directory):
+    feature_names = np.array(['\({}\)'.format(feature_name) for feature_name in ['R_P', 'V_P', 'E_P', '\overline{R_M}', '\overline{V_M}']])
+
+    feature_counts = pd.DataFrame.from_dict(LoggingFeatureSelector.selected_feature_counts, orient='index')
+    feature_counts.columns = ['Antal']
+    feature_counts.index = [' '.join(feature_name for feature_name in feature_names[np.array(mask)]) for mask in
+                            list(feature_counts.index)]
+    feature_counts.index.name = 'Egenskapsuppsättning'
+
+    features_by_first_cv = pd.DataFrame([' '.join(feature_name for feature_name in feature_names[np.array(mask)]) for mask in LoggingFeatureSelector.selected_features_by_cv[0]]).transpose()
+    features_by_first_cv.columns = [str(i) for i in range(1, 11)]
+
+    mean_feature_importances_by_cv = [np.mean(importances, axis=0) for importances in LoggingFeatureSelector.feature_importance_by_cv.values()]
+    print(mean_feature_importances_by_cv)
+
+    output_path = os.path.join(output_directory, 'feature_selection')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    feature_counts.to_csv(os.path.join(output_path, 'featureset_counts.csv'))
+    features_by_first_cv.to_csv(os.path.join(output_path, 'features_by_cv.csv'), index=False)
 
 
 def main():
@@ -259,23 +350,72 @@ def main():
 
     y = dataset.get_annotations()
 
+    """
+    results = {}
+    for i in range(len(dataset.all_feature_labels)):
+        for combination in itertools.combinations(range(dataset.get_all_features().shape[1]), i + 1):
+            latex_feature_names = np.array(['\({}\)'.format(feature_name) for feature_name in ['R_P', 'V_P', 'E_P', '\overline{R_M}', '\overline{V_M}']])
+
+            X = dataset.get_all_features()[:, list(combination)]
+
+            mask = np.zeros(len(dataset.all_feature_labels), dtype=bool)
+            mask[np.array(combination)] = 1
+            string_mask = ''.join(map(str, mask))
+
+            result = run(X, y, estimator,
+                         dataset.get_binarized_annotations_by_document(),
+                         args.output_directory,
+                         os.path.join(args.scoring_directory, 'all_combinations', '_'.join(np.array(dataset.all_feature_labels)[mask])))
+
+            for score_label, scoring in result.items():
+                scoring = scoring.transpose()
+                scoring = scoring.reset_index().drop('index', axis=1)
+                #scoring.index = [''.join(latex_feature_names[mask])]
+                #scoring.index = [''.join(map(str, mask.astype(int)))]
+
+                results.setdefault(score_label, []).append(scoring)
+
+            print('Ran combination: {}'.format(mask.astype(int)))
+
+    for score_label, scores in results.items():
+        output_path = os.path.join(args.output_directory, args.scoring_directory, score_label)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
+        save_common_results_without_transpose(scores, output_path, 'all_results.csv', 'all_errorplottable_results.csv')
+
+        interesting_rows = [3, 15, 23, 24, 27, 30]
+        save_common_results_without_transpose(
+            [scores[i] for i in interesting_rows],  # Creating a Numpy array and indexing with the list directly isn't working for some reason.
+            output_path,
+            'results.csv',
+            'errorplottable_results.csv'
+        )
+
+    """
+    #selection_pipeline = make_pipeline(LoggingFeatureSelector(RFECV(ExtraTreesClassifier(random_state=0), scoring='accuracy')), estimator)
+
     results = [
         run(dataset.get_project_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_features')),
         run(dataset.get_mean_method_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features')),
         run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V')),
         run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V')),
         run(dataset.get_all_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'all_features')),
+        """
         run(
             dataset.get_all_features(),
             y,
-            make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), estimator),
+            #make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), estimator),
+            selection_pipeline,
             dataset.get_binarized_annotations_by_document(),
             args.output_directory,
             os.path.join(args.scoring_directory, 'with_feature_selection')
         )
+        """
     ]
 
     save_common_results(results, os.path.join(args.output_directory, args.scoring_directory))
+    save_feature_selection_results(args.output_directory)
 
 
 if __name__ == '__main__':

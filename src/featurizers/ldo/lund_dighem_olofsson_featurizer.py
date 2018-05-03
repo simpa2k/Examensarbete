@@ -39,7 +39,7 @@ def mean_lines_of_code(path_to_project):
                                                      'java',
                                                      project_name,
                                                      '{}-Method.csv'.format(project_name)),
-                                        get_csv_reader(['LOC'])),
+                                        get_csv_reader(['TLOC'])),
                                dtype=np.float64)
 
     return np.mean(remove_nan_from_array(method_metrics))

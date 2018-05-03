@@ -18,6 +18,7 @@ class AnnotationSet:
         self.averaged_annotations = None
         self.no_neutral_annotations = None
         self.binarized_annotations = None
+        self.inverted_binarized_annotations = None
 
         self.annotation_column = 'Label'
 
