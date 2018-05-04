@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from src.utils.plot_confusion_matrix import plot_confusion_matrix
 
-scoring_directory = '../output/scoring/'
+scoring_directory = 'output/scoring/'
 
 index_col = 'x'
 mean_col = 'Medelvärde'
@@ -66,7 +66,7 @@ def read_scoring_df(score_label):
 
 
 accuracy_label = 'accuracy'
-precision_label = 'precision'
+precision_label = 'ppv'
 npv_label = 'npv'
 roc_auc_label = 'roc_auc'
 
@@ -75,7 +75,8 @@ prec_df = read_scoring_df(precision_label)
 npv_df = read_scoring_df(npv_label)
 roc_auc_df = read_scoring_df(roc_auc_label)
 
-rows = [3, 15, 23, 24, 27, 30]
+#rows = [3, 15, 23, 24, 27, 30]
+rows = [29, 30, 23]
 
 merged = acc_df.merge(prec_df, on=index_col, how='left').merge(npv_df, on=index_col, how='left').merge(roc_auc_df, on=index_col, how='left')
 

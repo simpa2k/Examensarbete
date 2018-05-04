@@ -87,7 +87,7 @@ def save_scores_as_csv(results, output_path, k_fold_label):
         scoring.index.name = 'Del'
         scoring = scoring.rename(columns={0: score_label})
 
-        scoring = scoring.round(3)
+        scoring = scoring.round(2)
 
         score_directory = os.path.join(output_path, score_label)
         if not os.path.exists(score_directory):
@@ -147,7 +147,7 @@ def perform_experiment(X, y, estimator):
 
     results = {
         'accuracy': pd.DataFrame(columns=columns),
-        'precision': pd.DataFrame(columns=columns),
+        'ppv': pd.DataFrame(columns=columns),
         'npv': pd.DataFrame(columns=columns),
         'roc_auc': pd.DataFrame(columns=columns)
     }
@@ -177,7 +177,7 @@ def perform_experiment(X, y, estimator):
             ignore_index=True
         )
 
-        results['precision'] = results['precision'].append(
+        results['ppv'] = results['ppv'].append(
             pd.DataFrame(
                 [[score for score in np.append(scores['test_precision'], [scores['test_precision'].mean(), scores['test_precision'].std()])]],
                 columns=columns),
@@ -200,7 +200,7 @@ def perform_experiment(X, y, estimator):
 
         record_predictions_for_documents(i, list(k_fold.split(X, y)), predictions, predictions_for_this_run)
 
-    plot_final_roc_curve()
+    #plot_final_roc_curve()
 
     return results, predictions
 
@@ -276,28 +276,10 @@ def map_predictions_to_annotations(annotations, predictions):
 
 def save_common_results(scoring_dicts, output_directory):
     save_common_results_without_transpose([scoring_dict['accuracy'].transpose() for scoring_dict in scoring_dicts], output_directory, 'results.csv', 'errorplottable_results.csv')
-    """
-    concatenated = pd.concat([data_frame.transpose() for data_frame in data_frames]) # All CV results are the same anyway, just choose the first one.
-    concatenated = concatenated\
-        .reset_index()\
-        .drop('index', axis=1)
-
-    concatenated.index.name = 'x'
-
-    concatenated.to_csv(os.path.join(output_directory, 'results.csv'))
-
-    errorplottable = concatenated.copy()[['Medelvärde', 'Standardavvikelse']]
-    errorplottable.columns = ['mean', 'std']
-
-    errorplottable.to_csv(os.path.join(output_directory, 'errorplottable_results.csv'))
-    """
 
 
 def save_common_results_without_transpose(data_frames, output_directory, results_filename, errorplottable_results_filename):
-    concatenated = pd.concat([data_frame for data_frame in data_frames], ignore_index=True) # All CV results are the same anyway, just choose the first one.
-    #concatenated = concatenated \
-    #    .reset_index() \
-    #    .drop('index', axis=1)
+    concatenated = pd.concat(data_frames, ignore_index=True)
 
     concatenated.index.name = 'x'
 
@@ -350,11 +332,58 @@ def main():
 
     y = dataset.get_annotations()
 
-    """
+    run_all_feature_combinations(args, dataset, estimator, y)
+    #run_improved_Halstead_model(args, dataset, estimator, y)
+
+
+def run_improved_Halstead_model(args, dataset, estimator, y):
+    feature_set_labels = [
+        'Projektnivå',
+        'Metodnivå',
+        'Rader kod projektnivå Halsteads V medelvärde metod',
+        'Rader kod medelvärde metod Halsteads V projektnivå',
+        'Alla egenskaper'
+    ]
+
+    results = [
+        run(
+            dataset.get_project_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(),
+            args.output_directory, os.path.join(args.scoring_directory, 'project_level_features')),
+        run(dataset.get_mean_method_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(),
+            args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features')),
+        run(dataset.get_project_level_loc_method_level_V_features(), y, estimator,
+            dataset.get_binarized_annotations_by_document(), args.output_directory,
+            os.path.join(args.scoring_directory, 'project_level_loc_method_level_V')),
+        run(dataset.get_method_level_loc_project_level_V_features(), y, estimator,
+            dataset.get_binarized_annotations_by_document(), args.output_directory,
+            os.path.join(args.scoring_directory, 'method_level_loc_project_level_V')),
+        run(dataset.get_all_features(), y, estimator, dataset.get_binarized_annotations_by_document(),
+            args.output_directory, os.path.join(args.scoring_directory, 'all_features')),
+    ]
+
+    results_by_scoring = {}
+    for feature_set_label, scoring_dict in zip(feature_set_labels, results):
+        for score_label, score in scoring_dict.items():
+            score = score.transpose()
+            score = score.rename({score_label: feature_set_label})
+            results_by_scoring.setdefault(score_label, []).append(score)
+
+    for score_label, scores in results_by_scoring.items():
+        save_common_results_without_transpose(
+            scores,
+            os.path.join(args.output_directory, args.scoring_directory),
+            '{}_results.csv'.format(score_label),
+            '{}_errorplottable_results.csv'.format(score_label)
+        )
+
+
+def run_all_feature_combinations(args, dataset, estimator, y):
     results = {}
     for i in range(len(dataset.all_feature_labels)):
         for combination in itertools.combinations(range(dataset.get_all_features().shape[1]), i + 1):
-            latex_feature_names = np.array(['\({}\)'.format(feature_name) for feature_name in ['R_P', 'V_P', 'E_P', '\overline{R_M}', '\overline{V_M}']])
+            latex_feature_names = np.array(['\({}\)'.format(feature_name) for feature_name in
+                                            ['R_P', 'V_P', 'E_P', '\overline{R_M}', '\overline{V_M}']])
+            readable_feature_abbreviations = np.array(['RP', 'VP', 'EP', 'RM', 'VM'])
 
             X = dataset.get_all_features()[:, list(combination)]
 
@@ -365,13 +394,15 @@ def main():
             result = run(X, y, estimator,
                          dataset.get_binarized_annotations_by_document(),
                          args.output_directory,
-                         os.path.join(args.scoring_directory, 'all_combinations', '_'.join(np.array(dataset.all_feature_labels)[mask])))
+                         os.path.join(args.scoring_directory, 'all_combinations',
+                                      '_'.join(np.array(dataset.all_feature_labels)[mask])))
 
             for score_label, scoring in result.items():
                 scoring = scoring.transpose()
                 scoring = scoring.reset_index().drop('index', axis=1)
-                #scoring.index = [''.join(latex_feature_names[mask])]
-                #scoring.index = [''.join(map(str, mask.astype(int)))]
+                # scoring.index = ['_'.join(readable_feature_abbreviations[mask])]
+                # scoring.index = [''.join(latex_feature_names[mask])]
+                # scoring.index = [''.join(map(str, mask.astype(int)))]
 
                 results.setdefault(score_label, []).append(scoring)
 
@@ -382,40 +413,16 @@ def main():
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        save_common_results_without_transpose(scores, output_path, 'all_results.csv', 'all_errorplottable_results.csv')
+        save_common_results_without_transpose(scores, output_path, 'all_results_{}.csv'.format(score_label), 'all_errorplottable_results_{}.csv'.format(score_label))
 
         interesting_rows = [3, 15, 23, 24, 27, 30]
         save_common_results_without_transpose(
-            [scores[i] for i in interesting_rows],  # Creating a Numpy array and indexing with the list directly isn't working for some reason.
+            [scores[i] for i in interesting_rows],
+            # Creating a Numpy array and indexing with the list directly isn't working for some reason.
             output_path,
             'results.csv',
             'errorplottable_results.csv'
         )
-
-    """
-    #selection_pipeline = make_pipeline(LoggingFeatureSelector(RFECV(ExtraTreesClassifier(random_state=0), scoring='accuracy')), estimator)
-
-    results = [
-        run(dataset.get_project_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_features')),
-        run(dataset.get_mean_method_level_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'mean_method_level_features')),
-        run(dataset.get_project_level_loc_method_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'project_level_loc_method_level_V')),
-        run(dataset.get_method_level_loc_project_level_V_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'method_level_loc_project_level_V')),
-        run(dataset.get_all_features(), y, estimator, dataset.get_binarized_annotations_by_document(), args.output_directory, os.path.join(args.scoring_directory, 'all_features')),
-        """
-        run(
-            dataset.get_all_features(),
-            y,
-            #make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), estimator),
-            selection_pipeline,
-            dataset.get_binarized_annotations_by_document(),
-            args.output_directory,
-            os.path.join(args.scoring_directory, 'with_feature_selection')
-        )
-        """
-    ]
-
-    save_common_results(results, os.path.join(args.output_directory, args.scoring_directory))
-    save_feature_selection_results(args.output_directory)
 
 
 if __name__ == '__main__':
