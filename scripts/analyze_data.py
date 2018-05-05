@@ -30,7 +30,7 @@ correct_datatypes = {
 
 
 def path_to_results(score_label):
-    return os.path.join(scoring_directory, score_label, 'all_results.csv')
+    return os.path.join(scoring_directory, score_label, 'all_results_{}.csv'.format(score_label))
 
 
 def read_confusion_matrix(*feature_labels):
@@ -47,19 +47,19 @@ def path_to_confusion_matrix(feature_labels):
 
 
 def join_feature_labels(feature_labels):
-    return '_'.join(feature_labels)
+    return ''.join(feature_labels)
 
 
 def get_score_col(score, score_label):
-    return '{}_{}'.format(score, score_label)
+    return '{}{}'.format(score, score_label)
 
 
 def read_scoring_df(score_label):
     df = pd.read_csv(path_to_results(score_label), dtype=correct_datatypes)[[index_col, mean_col, std_col]]
     df.columns = [
         index_col,
-        get_score_col(score_label, 'mean'),
-        get_score_col(score_label, 'std'),
+        get_score_col(score_label, mean_label),
+        get_score_col(score_label, std_label),
     ]
 
     return df
@@ -69,35 +69,43 @@ accuracy_label = 'accuracy'
 precision_label = 'ppv'
 npv_label = 'npv'
 roc_auc_label = 'roc_auc'
+tpr_label = 'tpr'
+tnr_label = 'tnr'
+
+mean_label = 'm'
+std_label = 'std'
 
 acc_df = read_scoring_df(accuracy_label)
 prec_df = read_scoring_df(precision_label)
 npv_df = read_scoring_df(npv_label)
-roc_auc_df = read_scoring_df(roc_auc_label)
+tpr_df = read_scoring_df(tpr_label)
+tnr_df = read_scoring_df(tnr_label)
 
-#rows = [3, 15, 23, 24, 27, 30]
-rows = [29, 30, 23]
+rows = [0, 23, 28, 29, 30]
 
-merged = acc_df.merge(prec_df, on=index_col, how='left').merge(npv_df, on=index_col, how='left').merge(roc_auc_df, on=index_col, how='left')
+merged = acc_df\
+    .merge(prec_df, on=index_col, how='left')\
+    .merge(npv_df, on=index_col, how='left')\
+    .merge(tpr_df, on=index_col, how='left')\
+    .merge(tnr_df, on=index_col, how='left')
 
 # Plot accuracy, precision and negative predictive value for all feature sets
 merged[[
-    get_score_col(accuracy_label, 'mean'),
-    get_score_col(precision_label, 'mean'),
-    get_score_col(npv_label, 'mean'),
-    get_score_col(roc_auc_label, 'mean')
+    get_score_col(accuracy_label, mean_label),
+    get_score_col(precision_label, mean_label),
+    get_score_col(npv_label, mean_label),
 ]].plot()
 plt.show()
 
 # Plot accuracy, precision and negative predictive value for selected rows
-merged[[get_score_col(accuracy_label, 'mean'), get_score_col(precision_label, 'mean'), get_score_col(npv_label, 'mean')]].iloc[rows].plot()
+merged[[get_score_col(accuracy_label, mean_label), get_score_col(precision_label, mean_label), get_score_col(npv_label, mean_label)]].iloc[rows].plot()
 plt.show()
 
 # Error bars for all feature sets
 plt.errorbar(
     x=list(merged.index),
-    y=merged[get_score_col(accuracy_label, 'mean')],
-    yerr=merged[get_score_col(accuracy_label, 'std')],
+    y=merged[get_score_col(accuracy_label, mean_label)],
+    yerr=merged[get_score_col(accuracy_label, std_label)],
     fmt='o'
 )
 plt.show()
@@ -105,8 +113,8 @@ plt.show()
 # Error bars for selected rows
 plt.errorbar(
     x=rows,
-    y=merged[get_score_col(accuracy_label, 'mean')].iloc[rows],
-    yerr=merged[get_score_col(accuracy_label, 'std')].iloc[rows],
+    y=merged[get_score_col(accuracy_label, mean_label)].iloc[rows],
+    yerr=merged[get_score_col(accuracy_label, std_label)].iloc[rows],
     fmt='o'
 )
 plt.show()
@@ -115,18 +123,19 @@ plt.show()
 
 
 def confusion_matrix_for_row(row):
-    npv = merged[get_score_col(npv_label, 'mean')].iloc[row]
-    ppv = merged[get_score_col(precision_label, 'mean')].iloc[row]
+    npv = merged[get_score_col(npv_label, mean_label)].iloc[row]
+    ppv = merged[get_score_col(precision_label, std_label)].iloc[row]
 
     return np.array([[npv, 1 - ppv], [1 - npv, ppv]])
 
 
 rows_and_matrices = [
     (
-        '{} (acc={:.2f})'.format(row, merged[get_score_col(accuracy_label, 'mean')].iloc[row]),
+        '{} (acc={:.2f})'.format(row, merged[get_score_col(accuracy_label, mean_label)].iloc[row]),
         confusion_matrix_for_row(row)
     ) for row in rows
 ]
 for row, cm in rows_and_matrices:
     plot_confusion_matrix(cm, ['-', '+'], title=row)
     plt.show()
+

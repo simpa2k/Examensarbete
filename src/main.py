@@ -1,17 +1,32 @@
 import argparse
 import os
 import itertools
+from functools import reduce
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 import numpy as np
 import pandas as pd
+from matplotlib.colors import ListedColormap
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.datasets import make_classification, make_moons, make_circles
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble.forest import RandomForestClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, make_scorer, confusion_matrix, precision_score
-from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.metrics import accuracy_score, make_scorer, confusion_matrix, precision_score, recall_score
+from sklearn.model_selection import StratifiedKFold, cross_validate, train_test_split
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
+from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from sklearn.neural_network import MLPClassifier
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -30,6 +45,7 @@ estimators = [
     default_pipeline_of(LogisticRegression()),
     MultinomialNB(),
     #make_pipeline(LoggingFeatureSelector(SelectFromModel(ExtraTreesClassifier(random_state=0))), GaussianNB()),
+    #CalibratedClassifierCV(GaussianNB(), cv=2, method='isotonic'),
     GaussianNB(),
     BernoulliNB(),
     RandomForestClassifier(n_estimators=100, random_state=0)
@@ -149,7 +165,9 @@ def perform_experiment(X, y, estimator):
         'accuracy': pd.DataFrame(columns=columns),
         'ppv': pd.DataFrame(columns=columns),
         'npv': pd.DataFrame(columns=columns),
-        'roc_auc': pd.DataFrame(columns=columns)
+        #'roc_auc': pd.DataFrame(columns=columns),
+        'tpr': pd.DataFrame(columns=columns),
+        'tnr': pd.DataFrame(columns=columns)
     }
 
     predictions = create_prediction_dataframe()
@@ -161,14 +179,17 @@ def perform_experiment(X, y, estimator):
 
         #scoring = make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run)
         scoring = {
+            #'accuracy': make_scorer(weighted_accuracy, prediction_gatherer=predictions_for_this_run),
             'accuracy': make_scorer(accuracy_score),
             'precision': make_scorer(precision_score),
             'npv': make_scorer(negative_predictive_value),
-            'roc_auc': make_scorer(plot_cv_roc_curve, needs_proba=True)
+            'roc_auc': make_scorer(plot_cv_roc_curve, needs_proba=True),
+            'tpr': make_scorer(recall_score),
+            'tnr': make_scorer(recall_score, pos_label=0)
         }
 
         #scores = cross_val_score(estimator, X, y, cv=k_fold, scoring=scoring)
-        scores = cross_validate(estimator, X, y, cv=k_fold, scoring=scoring)
+        scores = cross_validate(estimator, X, y, cv=k_fold, scoring=scoring, return_train_score=False)
 
         results['accuracy'] = results['accuracy'].append(
             pd.DataFrame(
@@ -191,12 +212,27 @@ def perform_experiment(X, y, estimator):
             ignore_index=True
         )
 
+        results['tpr'] = results['tpr'].append(
+            pd.DataFrame(
+                [[score for score in np.append(scores['test_tpr'], [scores['test_tpr'].mean(), scores['test_tpr'].std()])]],
+                columns=columns),
+            ignore_index=True
+        )
+
+        results['tnr'] = results['tnr'].append(
+            pd.DataFrame(
+                [[score for score in np.append(scores['test_tnr'], [scores['test_tnr'].mean(), scores['test_tnr'].std()])]],
+                columns=columns),
+            ignore_index=True
+        )
+        """
         results['roc_auc'] = results['roc_auc'].append(
             pd.DataFrame(
                 [[score for score in np.append(scores['test_roc_auc'], [scores['test_roc_auc'].mean(), scores['test_roc_auc'].std()])]],
                 columns=columns),
             ignore_index=True
         )
+        """
 
         record_predictions_for_documents(i, list(k_fold.split(X, y)), predictions, predictions_for_this_run)
 
@@ -274,21 +310,32 @@ def map_predictions_to_annotations(annotations, predictions):
     return human_to_model_mapping
 
 
-def save_common_results(scoring_dicts, output_directory):
-    save_common_results_without_transpose([scoring_dict['accuracy'].transpose() for scoring_dict in scoring_dicts], output_directory, 'results.csv', 'errorplottable_results.csv')
+#def save_common_results(scoring_dicts, output_directory):
+#    save_common_results_without_transpose([scoring_dict['accuracy'].transpose() for scoring_dict in scoring_dicts], output_directory, 'results.csv', 'errorplottable_results.csv')
 
 
-def save_common_results_without_transpose(data_frames, output_directory, results_filename, errorplottable_results_filename):
-    concatenated = pd.concat(data_frames, ignore_index=True)
+def save_common_results_without_transpose(data_frames, output_directory, results_filename, errorplottable_results_filename, ignore_index=False):
+    concatenated = pd.concat(data_frames, ignore_index=ignore_index)
 
     concatenated.index.name = 'x'
 
-    concatenated.to_csv(os.path.join(output_directory, results_filename))
+    concatenated.to_csv(os.path.join(output_directory, results_filename), sep=';')
 
     errorplottable = concatenated.copy()[['Medelvärde', 'Standardavvikelse']]
     errorplottable.columns = ['mean', 'std']
 
-    errorplottable.to_csv(os.path.join(output_directory, errorplottable_results_filename))
+    errorplottable.to_csv(os.path.join(output_directory, errorplottable_results_filename), sep=';')
+
+
+def save_common_results_with_and_without_index(data_frames, output_directory, filename):
+    save_common_results(data_frames, output_directory, 'with_index_{}'.format(filename))
+    save_common_results(data_frames, output_directory, 'without_index_{}'.format(filename), ignore_index=True)
+
+
+def save_common_results(data_frames, output_directory, filename, ignore_index=False):
+    concatenated = pd.concat(data_frames, ignore_index=ignore_index)
+    concatenated.index.name = 'x'
+    concatenated.to_csv(os.path.join(output_directory, filename), sep=';')
 
 
 def save_feature_selection_results(output_directory):
@@ -332,8 +379,10 @@ def main():
 
     y = dataset.get_annotations()
 
-    run_all_feature_combinations(args, dataset, estimator, y)
+    #run_all_feature_combinations(args, dataset, estimator, y)
     #run_improved_Halstead_model(args, dataset, estimator, y)
+
+    plot_model(dataset.get_all_features(), y, CalibratedClassifierCV(GaussianNB(), cv=2, method='sigmoid'))
 
 
 def run_improved_Halstead_model(args, dataset, estimator, y):
@@ -373,12 +422,14 @@ def run_improved_Halstead_model(args, dataset, estimator, y):
             scores,
             os.path.join(args.output_directory, args.scoring_directory),
             '{}_results.csv'.format(score_label),
-            '{}_errorplottable_results.csv'.format(score_label)
+            '{}_errorplottable_results.csv'.format(score_label),
+            ignore_index=True
         )
 
 
 def run_all_feature_combinations(args, dataset, estimator, y):
     results = {}
+    only_aggregated_results = []
     for i in range(len(dataset.all_feature_labels)):
         for combination in itertools.combinations(range(dataset.get_all_features().shape[1]), i + 1):
             latex_feature_names = np.array(['\({}\)'.format(feature_name) for feature_name in
@@ -397,25 +448,44 @@ def run_all_feature_combinations(args, dataset, estimator, y):
                          os.path.join(args.scoring_directory, 'all_combinations',
                                       '_'.join(np.array(dataset.all_feature_labels)[mask])))
 
+            only_aggregations = []
             for score_label, scoring in result.items():
                 scoring = scoring.transpose()
-                scoring = scoring.reset_index().drop('index', axis=1)
-                # scoring.index = ['_'.join(readable_feature_abbreviations[mask])]
-                # scoring.index = [''.join(latex_feature_names[mask])]
+                #scoring = scoring.reset_index().drop('index', axis=1)
+                #scoring.index = ['-'.join(readable_feature_abbreviations[mask])]
+                scoring.index = [', '.join(latex_feature_names[mask])]
                 # scoring.index = [''.join(map(str, mask.astype(int)))]
 
                 results.setdefault(score_label, []).append(scoring)
 
+                aggregation = scoring[['Medelvärde', 'Standardavvikelse']]
+                aggregation.columns = ['{}m'.format(score_label), '{}std'.format(score_label)]
+                only_aggregations.append(aggregation)
+
+            joined = reduce(lambda a, b: a.join(b), only_aggregations)
+            only_aggregated_results.append(joined[['accuracym', 'accuracystd', 'tprm', 'tprstd', 'tnrm', 'tnrstd']])
+
             print('Ran combination: {}'.format(mask.astype(int)))
+
+    save_common_results_with_and_without_index(only_aggregated_results,
+                                               os.path.join(args.output_directory, args.scoring_directory),
+                                               'all_aggregated.csv')
+
+    interesting_rows = [0, 4, 23, 28, 29, 30]
+    save_common_results_with_and_without_index([only_aggregated_results[i] for i in interesting_rows],
+                                               os.path.join(args.output_directory, args.scoring_directory),
+                                               'selected_aggregated.csv')
 
     for score_label, scores in results.items():
         output_path = os.path.join(args.output_directory, args.scoring_directory, score_label)
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        save_common_results_without_transpose(scores, output_path, 'all_results_{}.csv'.format(score_label), 'all_errorplottable_results_{}.csv'.format(score_label))
+        save_common_results_without_transpose(scores,
+                                              output_path,
+                                              'all_results_{}.csv'.format(score_label),
+                                              'all_errorplottable_results_{}.csv'.format(score_label))
 
-        interesting_rows = [3, 15, 23, 24, 27, 30]
         save_common_results_without_transpose(
             [scores[i] for i in interesting_rows],
             # Creating a Numpy array and indexing with the list directly isn't working for some reason.
@@ -423,6 +493,32 @@ def run_all_feature_combinations(args, dataset, estimator, y):
             'results.csv',
             'errorplottable_results.csv'
         )
+
+
+def plot_model(X, y, estimator):
+    X = StandardScaler().fit_transform(X, y)
+    estimator.fit(X[:, [1, 3, 4]], y)
+
+    h = .25
+    x_min, x_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+    y_min, y_max = X[:, 3].min() - .5, X[:, 3].max() + .5
+    z_min, z_max = X[:, 4].min() - .5, X[:, 4].max() + .5
+    xx, yy, zz = np.meshgrid(np.arange(x_min, x_max, h),
+                             np.arange(y_min, y_max, h),
+                             np.arange(z_min, z_max, h))
+
+    predictions = estimator.predict_proba(np.c_[xx.ravel(), yy.ravel(), zz.ravel()])[:, 1]
+    predictions = np.ma.masked_where(predictions < 0.5, predictions)
+
+    cm = plt.cm.RdBu
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    ax.scatter(xx, yy, zz, c=predictions, cmap=cm)
+    ax.scatter(X[:, 1], X[:, 3], X[:, 4], c=y, cmap='spring', marker='^')
+
+    plt.show()
 
 
 if __name__ == '__main__':
