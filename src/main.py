@@ -27,6 +27,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from yellowbrick.features import RadViz, ParallelCoordinates, Rank2D
 
 from src.datasets import posnett_hindle_devanbu
 from src.datasets.ldo.LundDighemOlofssonDataset import LundDighemOlofssonDataset
@@ -172,8 +173,21 @@ def perform_experiment(X, y, estimator):
 
     predictions = create_prediction_dataframe()
 
+    seeds = [
+        1983035430998507774,
+        2492163100594793564,
+        2235064643215202628,
+        5650189345361594233,
+        7864960714772215120,
+        5318943603319863738,
+        6882443148662089787,
+        1979075520885433012,
+        1377725550049272919,
+        1315720641730600152
+    ]
+
     for i in range(0, 10):
-        k_fold = StratifiedKFold(n_splits=10, random_state=i)
+        k_fold = StratifiedKFold(n_splits=10, random_state=seeds[i])
 
         predictions_for_this_run = []
 
@@ -382,7 +396,9 @@ def main():
     #run_all_feature_combinations(args, dataset, estimator, y)
     #run_improved_Halstead_model(args, dataset, estimator, y)
 
-    plot_model(dataset.get_all_features(), y, CalibratedClassifierCV(GaussianNB(), cv=2, method='sigmoid'))
+    #plot_model(dataset.get_all_features(), y, CalibratedClassifierCV(GaussianNB(), cv=2, method='sigmoid'))
+
+    visualize(dataset.get_all_features(), y)
 
 
 def run_improved_Halstead_model(args, dataset, estimator, y):
@@ -519,6 +535,24 @@ def plot_model(X, y, estimator):
     ax.scatter(X[:, 1], X[:, 3], X[:, 4], c=y, cmap='spring', marker='^')
 
     plt.show()
+
+
+def visualize(X, y):
+    #X = X[:, [1, 2, 3, 4]]
+    X = StandardScaler().fit_transform(X, y)
+
+    features = [
+        'RP',
+        'VP',
+        'EP',
+        'RM',
+        'VM'
+    ]
+
+    visualizer = ParallelCoordinates(classes=[0, 1], features=features)
+    visualizer.fit(X, y)
+    data = visualizer.transform(X)
+    visualizer.poof()
 
 
 if __name__ == '__main__':
