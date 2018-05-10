@@ -125,8 +125,8 @@ class LundDighemOlofssonDataset():
             correlations[labels[y]][labels[x]] = r[0]
             p_values[labels[y]][labels[x]] = r[1]
 
-        correlations.round(2).to_csv(os.path.join(output_path, 'correlations.csv'), index_label='x')
-        p_values.round(4).to_csv(os.path.join(output_path, 'correlation_p_values.csv'), index_label='x')
+        correlations.round(2).to_csv(os.path.join(output_path, 'correlations.csv'), index_label='x', decimal=',', sep=';')
+        p_values.round(4).to_csv(os.path.join(output_path, 'correlation_p_values.csv'), index_label='x', decimal=',', sep=';')
 
     def output_data(self, feature_set, output_path):
         to_modify = pd.DataFrame(self.annotation_set.averaged_annotations, columns=['Bedömning']).join(feature_set.features)

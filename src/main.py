@@ -187,7 +187,7 @@ def perform_experiment(X, y, estimator):
     ]
 
     for i in range(0, 10):
-        k_fold = StratifiedKFold(n_splits=10, random_state=seeds[i])
+        k_fold = StratifiedKFold(n_splits=10, random_state=i)
 
         predictions_for_this_run = []
 
@@ -328,28 +328,28 @@ def map_predictions_to_annotations(annotations, predictions):
 #    save_common_results_without_transpose([scoring_dict['accuracy'].transpose() for scoring_dict in scoring_dicts], output_directory, 'results.csv', 'errorplottable_results.csv')
 
 
-def save_common_results_without_transpose(data_frames, output_directory, results_filename, errorplottable_results_filename, ignore_index=False):
+def save_common_results_without_transpose(data_frames, output_directory, results_filename, errorplottable_results_filename, ignore_index=False, separator=','):
     concatenated = pd.concat(data_frames, ignore_index=ignore_index)
 
     concatenated.index.name = 'x'
 
-    concatenated.to_csv(os.path.join(output_directory, results_filename), sep=';')
+    concatenated.to_csv(os.path.join(output_directory, results_filename), sep=separator)
 
     errorplottable = concatenated.copy()[['Medelvärde', 'Standardavvikelse']]
     errorplottable.columns = ['mean', 'std']
 
-    errorplottable.to_csv(os.path.join(output_directory, errorplottable_results_filename), sep=';')
+    errorplottable.to_csv(os.path.join(output_directory, errorplottable_results_filename), sep=separator)
 
 
-def save_common_results_with_and_without_index(data_frames, output_directory, filename):
-    save_common_results(data_frames, output_directory, 'with_index_{}'.format(filename))
-    save_common_results(data_frames, output_directory, 'without_index_{}'.format(filename), ignore_index=True)
+def save_common_results_with_and_without_index(data_frames, output_directory, filename, separator=','):
+    save_common_results(data_frames, output_directory, 'with_index_{}'.format(filename), separator=separator)
+    save_common_results(data_frames, output_directory, 'without_index_{}'.format(filename), ignore_index=True, separator=separator)
 
 
-def save_common_results(data_frames, output_directory, filename, ignore_index=False):
+def save_common_results(data_frames, output_directory, filename, ignore_index=False, separator=','):
     concatenated = pd.concat(data_frames, ignore_index=ignore_index)
     concatenated.index.name = 'x'
-    concatenated.to_csv(os.path.join(output_directory, filename), sep=';')
+    concatenated.to_csv(os.path.join(output_directory, filename), sep=separator, decimal=',')
 
 
 def save_feature_selection_results(output_directory):
@@ -485,12 +485,14 @@ def run_all_feature_combinations(args, dataset, estimator, y):
 
     save_common_results_with_and_without_index(only_aggregated_results,
                                                os.path.join(args.output_directory, args.scoring_directory),
-                                               'all_aggregated.csv')
+                                               'all_aggregated.csv',
+                                               separator=';')
 
     interesting_rows = [0, 4, 23, 28, 29, 30]
     save_common_results_with_and_without_index([only_aggregated_results[i] for i in interesting_rows],
                                                os.path.join(args.output_directory, args.scoring_directory),
-                                               'selected_aggregated.csv')
+                                               'selected_aggregated.csv',
+                                               separator=';')
 
     for score_label, scores in results.items():
         output_path = os.path.join(args.output_directory, args.scoring_directory, score_label)
@@ -500,14 +502,16 @@ def run_all_feature_combinations(args, dataset, estimator, y):
         save_common_results_without_transpose(scores,
                                               output_path,
                                               'all_results_{}.csv'.format(score_label),
-                                              'all_errorplottable_results_{}.csv'.format(score_label))
+                                              'all_errorplottable_results_{}.csv'.format(score_label),
+                                              separator=';')
 
         save_common_results_without_transpose(
             [scores[i] for i in interesting_rows],
             # Creating a Numpy array and indexing with the list directly isn't working for some reason.
             output_path,
             'results.csv',
-            'errorplottable_results.csv'
+            'errorplottable_results.csv',
+            separator=';'
         )
 
 
