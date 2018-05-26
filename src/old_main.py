@@ -393,8 +393,8 @@ def main():
 
     y = dataset.get_annotations()
 
-    #run_all_feature_combinations(args, dataset, estimator, y)
-    run_improved_Halstead_model(args, dataset, estimator, y)
+    run_all_feature_combinations(args, dataset, estimator, y)
+    #run_improved_Halstead_model(args, dataset, estimator, y)
 
     #plot_model(dataset.get_all_features(), y, estimator)
 

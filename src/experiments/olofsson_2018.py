@@ -58,21 +58,20 @@ def gather_results_for_all_feature_combinations(dataset, output_directory, resul
             latex_feature_names = np.array(['\({}\)'.format(feature_name) for feature_name in
                                             ['R_P', 'V_P', 'E_P', '\overline{R_M}', '\overline{V_M}']])
 
-            joined, mask = run_feature_combination(combination,
-                                                   dataset,
-                                                   latex_feature_names,
-                                                   output_directory,
-                                                   results,
-                                                   scoring_directory,
-                                                   y)
+            joined = run_feature_combination(combination,
+                                             dataset,
+                                             latex_feature_names,
+                                             output_directory,
+                                             results,
+                                             scoring_directory,
+                                             y)
 
-            only_aggregated_results.append(joined[['accuracym', 'accuracystd', 'tprm', 'tprstd', 'tnrm', 'tnrstd']])
-            print('Ran combination: {}'.format(mask.astype(int)))
+            only_aggregated_results.append(joined)
 
     return only_aggregated_results
 
 
-def run_feature_combination(combination, dataset, latex_feature_names, output_directory, results, scoring_directory, y):
+def run_feature_combination(combination, dataset, feature_names, output_directory, results, scoring_directory, y):
     X = dataset.get_all_features()[:, list(combination)]
     mask = get_label_mask(combination, dataset)
 
@@ -82,10 +81,12 @@ def run_feature_combination(combination, dataset, latex_feature_names, output_di
                  os.path.join(scoring_directory, 'all_combinations',
                               '_'.join(np.array(dataset.all_feature_labels)[mask])))
 
-    only_aggregations = get_aggregations_by_score_label(latex_feature_names, mask, result, results)
+    only_aggregations = get_aggregations_by_score_label(feature_names, mask, result, results)
     joined = reduce(lambda a, b: a.join(b), only_aggregations)
 
-    return joined, mask
+    print('Ran combination: {}'.format(mask.astype(int)))
+
+    return joined[['accuracym', 'accuracystd', 'tprm', 'tprstd', 'tnrm', 'tnrstd']]
 
 
 def get_label_mask(combination, dataset):
@@ -95,11 +96,11 @@ def get_label_mask(combination, dataset):
     return mask
 
 
-def get_aggregations_by_score_label(latex_feature_names, mask, result, results):
+def get_aggregations_by_score_label(feature_names, mask, result, results):
     only_aggregations = []
     for score_label, scoring in result.items():
         scoring = scoring.transpose()
-        scoring.index = [', '.join(latex_feature_names[mask])]
+        scoring.index = [', '.join(feature_names[mask])]
 
         results.setdefault(score_label, []).append(scoring)
 
