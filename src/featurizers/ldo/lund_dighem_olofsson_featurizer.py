@@ -85,6 +85,7 @@ def calculate_total_halsteads_v(path_to_project):
 
     return np.sum(remove_nan_from_array(method_metrics))
 
+
 def calculate_mean_halsteads_v(path_to_project):
     project_name = os.path.basename(path_to_project)
     name_of_output_directory = project_name
@@ -149,6 +150,7 @@ def featurize_project_with_mean_method_level_loc_and_project_V(path_to_project):
                                                                        H))
 
     return [loc, total_method_V, H]
+
 
 def featurize_project_with_project_level_loc_and_mean_method_level_V(path_to_project):
     loc = total_lines_of_code(path_to_project)
