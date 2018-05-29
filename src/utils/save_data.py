@@ -21,7 +21,7 @@ def save_fig(output_path, filename, plt):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    plt.savefig(os.path.join(output_path, filename))
+    plt.savefig(os.path.join(output_path, filename), transparent=True)
 
 
 def save_scores_as_csv(results, output_path, k_fold_label):

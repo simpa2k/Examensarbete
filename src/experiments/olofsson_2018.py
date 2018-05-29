@@ -41,7 +41,7 @@ def run_all_feature_combinations(dataset, y, output_directory, scoring_directory
                                                'all_aggregated.csv',
                                                separator=';')
 
-    interesting_rows = [0, 4, 23, 28, 29, 30]
+    interesting_rows = [0, 2, 4, 17, 23, 29, 30]
     save_common_results_with_and_without_index([only_aggregated_results[i] for i in interesting_rows],
                                                os.path.join(output_directory, scoring_directory),
                                                'selected_aggregated.csv',
